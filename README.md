@@ -18,4 +18,4 @@ MIT License
 
 Citation
 
-Korakakis, G. (2026). Prepress Color Labs. Zenodo (DOI to be added)
+Korakakis, G. (2026). Prepress Color Labs. Zenodo https://doi.org/10.5281/zenodo.19070831
