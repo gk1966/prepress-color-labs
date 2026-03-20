@@ -275,7 +275,7 @@ label.field-lbl{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:1.5
     <div>
       <div class="pane">
         <div class="pane-title"><span></span>RGB Beam Analysis</div>
-        <canvas id="rgbMixCanvas" width="500" height="340" style="width:100%;border-radius:8px;display:block"></canvas>
+        <canvas id="rgbMixCanvas" width="1000" height="680" style="width:100%;border-radius:8px;display:block"></canvas>
         <div class="hint">
           <b>Additive Synthesis:</b> R+G = Yellow · G+B = Cyan · R+B = Magenta · R+G+B = White. Each channel <b>adds</b> luminance. This is the basis of monitors, projectors, and digital displays. <br><br>
           <b>🎯 Try This:</b> Lower all sliders to 0. Slowly increase Blue. Notice how it builds light from total darkness.
@@ -995,38 +995,38 @@ function updateRGB() {
   }
   cx.putImageData(idata, 0, 0);
 
-  function labelPill(ctx, text, x, y, textCol, fontSize) {
+function labelPill(ctx, text, x, y, textCol, fontSize) {
     ctx.save();
-    ctx.font = (fontSize || 10) + 'px DM Mono, monospace';
+    ctx.font = (fontSize || 20) + 'px DM Mono, monospace';
     ctx.textAlign = 'center';
     const tw = ctx.measureText(text).width;
-    const ph2 = (fontSize || 10) * 0.8;
-    const pw2 = tw / 2 + 6;
+    const ph2 = (fontSize || 20) * 0.8;
+    const pw2 = tw / 2 + 12;
     ctx.fillStyle = 'rgba(4,6,12,0.78)';
     ctx.beginPath();
-    ctx.roundRect(x - pw2, y - ph2 - 1, pw2 * 2, ph2 * 2 + 2, 4);
+    ctx.roundRect(x - pw2, y - ph2 - 2, pw2 * 2, ph2 * 2 + 4, 8);
     ctx.fill();
     ctx.fillStyle = textCol || '#fff';
     ctx.fillText(text, x, y + ph2 * 0.45);
     ctx.restore();
   }
 
-  cx.font = 'bold 15px DM Mono, monospace';
+  cx.font = 'bold 30px DM Mono, monospace';
   cx.textAlign = 'center';
-  labelPill(cx, 'R', cx_R - circleR * 0.55, cy_R - circleR * 0.72, 'rgb(' + Math.max(r,200) + ',100,100)', 13);
-  labelPill(cx, 'G', cx_G + circleR * 0.55, cy_G - circleR * 0.72, 'rgb(100,' + Math.max(g,200) + ',100)', 13);
-  labelPill(cx, 'B', cx_B,                  cy_B + circleR * 0.88, 'rgb(100,100,' + Math.max(b,200) + ')', 13);
+  labelPill(cx, 'R', cx_R - circleR * 0.55, cy_R - circleR * 0.72, 'rgb(' + Math.max(r,200) + ',100,100)', 26);
+  labelPill(cx, 'G', cx_G + circleR * 0.55, cy_G - circleR * 0.72, 'rgb(100,' + Math.max(g,200) + ',100)', 26);
+  labelPill(cx, 'B', cx_B,                  cy_B + circleR * 0.88, 'rgb(100,100,' + Math.max(b,200) + ')', 26);
 
   cx.globalAlpha = 0.92;
-  labelPill(cx, 'R+G', (cx_R+cx_G)/2, cy_R - circleR*0.38, hexColor(Math.max(r,200), Math.max(g,200), 0), 9);
-  labelPill(cx, 'R+B', cx_R - circleR*0.12, (cy_R+cy_B)/2 + circleR*0.22, hexColor(Math.max(r,200), 0, Math.max(b,200)), 9);
-  labelPill(cx, 'G+B', cx_G + circleR*0.12, (cy_G+cy_B)/2 + circleR*0.22, hexColor(0, Math.max(g,200), Math.max(b,200)), 9);
+  labelPill(cx, 'R+G', (cx_R+cx_G)/2, cy_R - circleR*0.38, hexColor(Math.max(r,200), Math.max(g,200), 0), 18);
+  labelPill(cx, 'R+B', cx_R - circleR*0.12, (cy_R+cy_B)/2 + circleR*0.22, hexColor(Math.max(r,200), 0, Math.max(b,200)), 18);
+  labelPill(cx, 'G+B', cx_G + circleR*0.12, (cy_G+cy_B)/2 + circleR*0.22, hexColor(0, Math.max(g,200), Math.max(b,200)), 18);
 
   const cxCtr = (cx_R+cx_G+cx_B)/3;
-  const cyCtr = (cy_R+cy_G+cy_B)/3 + 6;
+  const cyCtr = (cy_R+cy_G+cy_B)/3 + 12;
   cx.globalAlpha = 1;
-  labelPill(cx, 'R+G+B', cxCtr, cyCtr - 7, '#ffffff', 9);
-  labelPill(cx, hex.toUpperCase(), cxCtr, cyCtr + 8, hexColor(r,g,b), 9);
+  labelPill(cx, 'R+G+B', cxCtr, cyCtr - 14, '#ffffff', 18);
+  labelPill(cx, hex.toUpperCase(), cxCtr, cyCtr + 16, hexColor(r,g,b), 18);
 }
 
 // ══════════════════════════════════════════
