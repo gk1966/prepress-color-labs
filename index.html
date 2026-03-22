@@ -324,7 +324,7 @@ label.field-lbl{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:1.5
         <div class="pane-title"><span></span>What each pigment absorbs</div>
         <div style="font-size:12px;color:var(--dim);line-height:1.9">
           <span style="color:var(--C)">■ Cyan</span> → absorbs <span style="color:var(--R)">Red (620–700nm Broadband)</span><br>
-          <span style="color:var(--M)">■ Magenta</span> → absorbs <span style="color:var(--G)">Green (520–560nm Broadband)</span><br>
+          <span style="color:var(--M)">■ Magenta</span> → absorbs <span style="color:var(--G)">Green (500–590nm Broadband)</span><br>
           <span style="color:var(--Y)">■ Yellow</span> → absorbs <span style="color:var(--B)">Blue (400–480nm Broadband)</span>
         </div>
         <div class="chips" style="margin-top:10px">
@@ -822,6 +822,19 @@ function goLab(idx, btn) {
 // ══════════════════════════════════════════
 // SCIENTIFIC MATH HELPERS
 // ══════════════════════════════════════════
+function prepCanvas(canvas) {
+  var dpr = window.devicePixelRatio || 1;
+  var rect = canvas.getBoundingClientRect();
+  var w = rect.width;
+  var h = rect.height;
+  if (w === 0 || h === 0) { w = parseInt(canvas.getAttribute('width')); h = parseInt(canvas.getAttribute('height')); dpr = 1; }
+  canvas.width = w * dpr;
+  canvas.height = h * dpr;
+  var ctx = canvas.getContext('2d');
+  ctx.scale(dpr, dpr);
+  return { cx: ctx, cw: w, ch: h };
+}
+
 function srgbToLin(c) {
   return c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
 }
@@ -1096,9 +1109,7 @@ function updateCMY() {
 
   const canvas = document.getElementById('cmyCanvas');
   if(!canvas) return;
-  const cw = canvas.width;
-  const ch = canvas.height;
-  const cx = canvas.getContext('2d');
+  const {cx, cw, ch} = prepCanvas(canvas);
   cx.clearRect(0, 0, cw, ch);
   cx.fillStyle = '#13161d';
   cx.fillRect(0, 0, cw, ch);
@@ -1124,7 +1135,7 @@ function updateCMY() {
     cx.moveTo(margin.l, y_pos);
     cx.lineTo(margin.l + pw, y_pos);
     cx.stroke();
-    cx.fillStyle = '#4a5580';
+    cx.fillStyle = '#8a96b0';
     cx.font = '9px DM Mono, monospace';
     cx.textAlign = 'right';
     cx.fillText(v + '%', margin.l - 4, y_pos + 3);
@@ -1183,7 +1194,7 @@ function updateCMY() {
   const nms = ['380', '450', '520', '570', '620', '700', '780'];
   for(let i=0; i<nms.length; i++) {
     const x_pos = margin.l + (i / 6) * pw;
-    cx.fillStyle = '#4a5580';
+    cx.fillStyle = '#8a96b0';
     cx.font = '9px DM Mono, monospace';
     cx.textAlign = 'center';
     cx.fillText(nms[i] + 'nm', x_pos, margin.t + ph + 14);
@@ -1233,9 +1244,7 @@ function updateCMYK() {
 
   const canvas = document.getElementById('cmykChanCanvas');
   if(!canvas) return;
-  const cw = canvas.width;
-  const ch2 = canvas.height;
-  const cx = canvas.getContext('2d');
+  const {cx, cw, ch: ch2} = prepCanvas(canvas);
   cx.clearRect(0, 0, cw, ch2);
   cx.fillStyle = '#13161d';
   cx.fillRect(0, 0, cw, ch2);
@@ -1380,9 +1389,7 @@ function updateTAC() {
 
   const canvas = document.getElementById('tacCanvas');
   if(!canvas) return;
-  const cw = canvas.width;
-  const ch = canvas.height;
-  const cx = canvas.getContext('2d');
+  const {cx, cw, ch} = prepCanvas(canvas);
   cx.clearRect(0, 0, cw, ch);
   cx.fillStyle = '#13161d';
   cx.fillRect(0, 0, cw, ch);
@@ -1477,7 +1484,7 @@ function updateTAC() {
   cx.font = '9px DM Mono';
   cx.textAlign = 'left';
   cx.fillText('Limit ' + limit + '%', barX + barW + 4, limitY + 3);
-  cx.fillStyle = '#5a6380';
+  cx.fillStyle = '#8a96b8';
   cx.font = '11px DM Mono';
   cx.textAlign = 'left';
   cx.fillText('TAC = C+M+Y+K = ' + c + '+' + m + '+' + y + '+' + k + ' = ' + tac + '%', 20, ch - 20);
@@ -1497,9 +1504,7 @@ const colorSpaces = {
 function drawGamut() {
   const canvas = document.getElementById('gamutCanvas');
   if (!canvas) return;
-  const W = canvas.width;
-  const H = canvas.height;
-  const cx = canvas.getContext('2d');
+  const {cx, cw: W, ch: H} = prepCanvas(canvas);
   cx.clearRect(0, 0, W, H);
   cx.fillStyle = '#13161d';
   cx.fillRect(0, 0, W, H);
@@ -1545,7 +1550,7 @@ function drawGamut() {
     cx.beginPath(); cx.moveTo(pad, ty.py); cx.lineTo(pad+pw, ty.py); cx.stroke();
     cx.fillStyle='#2a3050'; cx.font='9px DM Mono'; cx.textAlign='center'; cx.fillText(v.toFixed(1), tx.px, pad+ph+14); cx.textAlign='right'; cx.fillText(v.toFixed(1), pad-4, ty.py+3);
   }
-  cx.fillStyle='#4a5580'; cx.font='10px DM Mono'; cx.textAlign='center'; cx.fillText('x', pad+pw/2, pad+ph+26);
+  cx.fillStyle='#8a96b0'; cx.font='10px DM Mono'; cx.textAlign='center'; cx.fillText('x', pad+pw/2, pad+ph+26);
   cx.save(); cx.translate(14, pad+ph/2); cx.rotate(-Math.PI/2); cx.textAlign='center'; cx.fillText('y', 0, 0); cx.restore();
 
   const checks = document.querySelectorAll('#csCheckboxes input[type=checkbox]');
@@ -1645,9 +1650,7 @@ function updateGCR() {
 
   const canvas = document.getElementById('gcrCanvas');
   if(!canvas) return;
-  const cw = canvas.width;
-  const ch = canvas.height;
-  const cx = canvas.getContext('2d');
+  const {cx, cw, ch} = prepCanvas(canvas);
   cx.clearRect(0, 0, cw, ch);
   cx.fillStyle = '#13161d';
   cx.fillRect(0, 0, cw, ch);
@@ -1682,7 +1685,7 @@ function updateGCR() {
       cx.stroke();
     }
     
-    cx.fillStyle = '#5a6380';
+    cx.fillStyle = '#8a96b8';
     cx.font='9px DM Mono';
     cx.textAlign='center';
     cx.fillText('GCR ' + Math.round(gcr*100)+'%', x + (swW-8)/2, swY + swH + 14);
@@ -1691,7 +1694,7 @@ function updateGCR() {
     cx.fillText('K=' + kv.toFixed(0)+'%', x + (swW-8)/2, swY + swH + 26);
   }
 
-  cx.fillStyle = '#2e3455';
+  cx.fillStyle = '#7a88a8';
   cx.font='11px DM Mono';
   cx.textAlign='left';
   cx.fillText('RGB(' + r + ',' + g + ',' + b + ') -> CMY: C' + c0.toFixed(0) + ' M' + m0.toFixed(0) + ' Y' + y0.toFixed(0) + ' -> GCR ' + Math.round(gcrLevel*100) + '%: C' + cGCR.toFixed(0) + ' M' + mGCR.toFixed(0) + ' Y' + yGCR.toFixed(0) + ' K' + kGCR.toFixed(0), 20, ch - 14);
@@ -1732,9 +1735,7 @@ function updateDotGain() {
 
   const canvas = document.getElementById('dotGainCanvas');
   if(!canvas) return;
-  const cw = canvas.width;
-  const ch = canvas.height;
-  const cx = canvas.getContext('2d');
+  const {cx, cw, ch} = prepCanvas(canvas);
   cx.clearRect(0, 0, cw, ch);
   cx.fillStyle = '#13161d';
   cx.fillRect(0, 0, cw, ch);
@@ -1752,7 +1753,7 @@ function updateDotGain() {
     const y_pos = m.t + (1-v/100)*ph;
     cx.beginPath(); cx.moveTo(x_pos, m.t); cx.lineTo(x_pos, m.t+ph); cx.stroke();
     cx.beginPath(); cx.moveTo(m.l, y_pos); cx.lineTo(m.l+pw, y_pos); cx.stroke();
-    cx.fillStyle='#2e3455'; cx.font='9px DM Mono'; cx.textAlign='center';
+    cx.fillStyle='#7a88a8'; cx.font='9px DM Mono'; cx.textAlign='center';
     cx.fillText(v+'%', x_pos, m.t+ph+14);
     cx.textAlign='right'; cx.fillText(v+'%', m.l-4, y_pos+3);
   }
@@ -1761,7 +1762,7 @@ function updateDotGain() {
   cx.setLineDash([4,4]);
   cx.beginPath(); cx.moveTo(m.l,m.t+ph); cx.lineTo(m.l+pw,m.t); cx.stroke();
   cx.setLineDash([]);
-  cx.fillStyle='#2e3455'; cx.font='9px DM Mono'; cx.textAlign='left';
+  cx.fillStyle='#7a88a8'; cx.font='9px DM Mono'; cx.textAlign='left';
   cx.fillText('Ideal (no gain)', m.l+pw/2+10, m.t+ph/2-6);
 
   const entries = Object.keys(dgProfiles);
@@ -1834,7 +1835,7 @@ function updateDotGain() {
     cx.fillStyle='#aab4cc';
     const rFile = Math.sqrt(tone/100)*22;
     cx.beginPath(); cx.arc(d1x, d1y, rFile, 0, Math.PI*2); cx.fill();
-    cx.fillStyle='#2e3455'; cx.font='9px DM Mono'; cx.textAlign='center';
+    cx.fillStyle='#7a88a8'; cx.font='9px DM Mono'; cx.textAlign='center';
     cx.fillText('File', d1x, d1y+34); cx.fillText(tone+'%', d1x, d1y+44);
 
     cx.fillStyle='#1a2035'; cx.beginPath(); cx.arc(d1x, d1y+90, 24, 0, Math.PI*2); cx.fill();
@@ -1843,11 +1844,11 @@ function updateDotGain() {
     cx.globalAlpha = 0.8;
     cx.beginPath(); cx.arc(d1x, d1y+90, rPrint, 0, Math.PI*2); cx.fill();
     cx.globalAlpha = 1;
-    cx.fillStyle='#2e3455'; cx.font='9px DM Mono'; cx.textAlign='center';
+    cx.fillStyle='#7a88a8'; cx.font='9px DM Mono'; cx.textAlign='center';
     cx.fillText('Printed', d1x, d1y+124); cx.fillText(printed.toFixed(0)+'%', d1x, d1y+134);
   }
 
-  cx.fillStyle='#4a5580'; cx.font='10px DM Mono'; cx.textAlign='center';
+  cx.fillStyle='#8a96b0'; cx.font='10px DM Mono'; cx.textAlign='center';
   cx.fillText('File Tone Value (%)', m.l+pw/2, m.t+ph+34);
   cx.save(); cx.translate(16, m.t+ph/2); cx.rotate(-Math.PI/2);
   cx.textAlign='center'; cx.fillText('Printed Tone Value (%)', 0, 0); cx.restore();
@@ -1859,7 +1860,7 @@ function updateDotGain() {
     cx.globalAlpha = key === dgPaper ? 1.0 : 0.25;
     cx.fillRect(m.l, m.t+ph-30+i*14, 20, 3);
     cx.font='9px DM Mono'; cx.textAlign='left'; 
-    cx.fillStyle = key === dgPaper ? p.col : '#2e3455';
+    cx.fillStyle = key === dgPaper ? p.col : '#7a88a8';
     cx.globalAlpha = 1.0;
     cx.fillText(p.name, m.l+26, m.t+ph-28+i*14);
   }
@@ -1992,9 +1993,7 @@ function updateRI(){
 
   const canvas=document.getElementById('riCanvas');
   if(!canvas) return;
-  const cw=canvas.width;
-  const ch=canvas.height;
-  const cx=canvas.getContext('2d');
+  const {cx, cw, ch} = prepCanvas(canvas);
   cx.clearRect(0,0,cw,ch);
   cx.fillStyle='#13161d';
   cx.fillRect(0,0,cw,ch);
@@ -2002,7 +2001,7 @@ function updateRI(){
   const sw=120, sy=24, gap=20;
   cx.fillStyle=hexColor(r,g,b);
   cx.beginPath(); cx.roundRect(20,sy,sw,sw,8); cx.fill();
-  cx.fillStyle='#5a6380'; cx.font='10px DM Mono'; cx.textAlign='center';
+  cx.fillStyle='#8a96b8'; cx.font='10px DM Mono'; cx.textAlign='center';
   cx.fillText('RGB Original',20+sw/2,sy+sw+16);
   
   if(!inGamut){
@@ -2013,9 +2012,9 @@ function updateRI(){
     cx.fillText('\u26A0 Out-of-gamut',20+sw/2,sy+sw+28);
   }
 
-  cx.fillStyle='#2e3455'; cx.font='22px DM Sans'; cx.textAlign='center';
+  cx.fillStyle='#7a88a8'; cx.font='22px DM Sans'; cx.textAlign='center';
   cx.fillText('\u2192',160+gap,sy+sw/2+8);
-  cx.fillStyle='#4a5580'; cx.font='9px DM Mono'; cx.textAlign='center';
+  cx.fillStyle='#8a96b0'; cx.font='9px DM Mono'; cx.textAlign='center';
   
   let intentDisplay = 'perceptual';
   if(currentRI === 'relative') intentDisplay = 'relative';
@@ -2025,7 +2024,7 @@ function updateRI(){
 
   cx.fillStyle=hexColor(rOut,gOut,bOut);
   cx.beginPath(); cx.roundRect(220,sy,sw,sw,8); cx.fill();
-  cx.fillStyle='#5a6380'; cx.font='10px DM Mono'; cx.textAlign='center';
+  cx.fillStyle='#8a96b8'; cx.font='10px DM Mono'; cx.textAlign='center';
   cx.fillText('CMYK Simulation',220+sw/2,sy+sw+16);
 
   const intents=['perceptual','relative','absolute','saturation'];
@@ -2050,7 +2049,7 @@ function updateRI(){
       cx.beginPath(); cx.roundRect(x-1,rowY-1,boxW-6,boxH+2,6); cx.stroke();
     }
     
-    cx.fillStyle='#4a5580'; cx.font='9px DM Mono'; cx.textAlign='center';
+    cx.fillStyle='#8a96b0'; cx.font='9px DM Mono'; cx.textAlign='center';
     cx.fillText(intentNames[i], x+(boxW-8)/2, rowY+boxH+14);
     
     const de2 = deltaE(r,g,b,ri,gi,bi);
@@ -2058,7 +2057,7 @@ function updateRI(){
     cx.fillText('\u0394E='+de2.toFixed(1), x+(boxW-8)/2, rowY+boxH+26);
   }
   
-  cx.fillStyle='#2e3455'; cx.font='10px DM Mono'; cx.textAlign='left';
+  cx.fillStyle='#7a88a8'; cx.font='10px DM Mono'; cx.textAlign='left';
   cx.fillText('Comparison of 4 Rendering Intents for the same color:',20,rowY-10);
 }
 
@@ -2148,9 +2147,7 @@ function updateSoftProof(){
 
   const canvas=document.getElementById('spCanvas');
   if(!canvas) return;
-  const cw=canvas.width;
-  const ch=canvas.height;
-  const cx=canvas.getContext('2d');
+  const {cx, cw, ch} = prepCanvas(canvas);
   cx.clearRect(0,0,cw,ch);
   cx.fillStyle='#13161d';
   cx.fillRect(0,0,cw,ch);
@@ -2204,7 +2201,7 @@ function updateSoftProof(){
       cx.beginPath(); cx.roundRect(bx-1, by-1, bw-4, bh-26, 5); cx.stroke();
     }
     
-    cx.fillStyle = '#4a5580'; cx.font = '8px DM Mono'; cx.textAlign = 'center';
+    cx.fillStyle = '#8a96b0'; cx.font = '8px DM Mono'; cx.textAlign = 'center';
     const shortName = spGamuts[pk].name.split(' ')[0];
     cx.fillText(shortName, bx+(bw-6)/2, by+bh-20);
     
