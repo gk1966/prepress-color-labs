@@ -18,4 +18,8 @@ MIT License
 
 Citation
 
-Korakakis, G. (2026). Prepress Color Labs. Zenodo https://doi.org/10.5281/zenodo.19070831
+Korakakis, G. (2026).
+Department of Graphic Design and Visual Communication 
+School of Applied Arts and Culture
+Uniwa (University of West Attica)
+Prepress Color Labs. Zenodo https://doi.org/10.5281/zenodo.19070831
