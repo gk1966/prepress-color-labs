@@ -17,7 +17,7 @@ License
 MIT License
 
 Citation
-Prepress Color Labs.
+Prepress Color Labs.<br>
 Korakakis, G. (2026).
 Department of Graphic Design and Visual Communication 
 School of Applied Arts and Culture
