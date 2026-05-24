@@ -1,0 +1,2633 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Web-based heuristic simulation platform for prepress colorimetry education.">
+<title>Prepress Colour Management — Interactive Labs</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Fraunces:opsz,wght@9..144,300;700;900&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:       #0c0e12;
+  --panel:    #13161d;
+  --panel2:   #191d27;
+  --border:   #232840;
+  --border2:  #2e344f;
+  --text:     #dde3f0;
+  --muted:    #5a6380;
+  --dim:      #8892aa;
+  --C:  #00e5ff;
+  --M:  #ff2d78;
+  --Y:  #ffe500;
+  --K:  #aab4cc;
+  --R:  #ff4520;
+  --G:  #00ff88;
+  --B:  #4466ff;
+  --White: #ffffff;
+  --rad: 14px;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;min-height:100vh;overflow-x:hidden}
+
+/* ─── APP SHELL ─── */
+.app{display:grid;grid-template-columns:220px 1fr;min-height:100vh}
+
+/* ─── SIDEBAR ─── */
+.sidebar{background:var(--panel);border-right:1px solid var(--border);padding:0;display:flex;flex-direction:column;position:sticky;top:0;height:100vh;overflow-y:auto}
+.brand{padding:24px 20px 20px;border-bottom:1px solid var(--border)}
+.brand-sub{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:3px;color:var(--muted);text-transform:uppercase;margin-bottom:4px}
+.brand-title{font-family:'Fraunces',serif;font-size:22px;font-weight:900;line-height:1;background:linear-gradient(135deg,var(--C),var(--M));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.nav{flex:1;padding:12px 0}
+.nav-section{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;color:var(--muted);text-transform:uppercase;padding:14px 20px 6px}
+.nav-btn{width:100%;background:none;border:none;text-align:left;padding:10px 20px;cursor:pointer;color:var(--dim);font-family:'DM Sans',sans-serif;font-size:13px;display:flex;align-items:center;gap:10px;transition:all .18s;border-left:2px solid transparent;position:relative}
+.nav-btn:hover{color:var(--text);background:rgba(255,255,255,.03)}
+.nav-btn.active{color:var(--text);background:rgba(0,229,255,.06);border-left-color:var(--C)}
+.nav-btn .lab-num{font-family:'DM Mono',monospace;font-size:10px;color:var(--muted);min-width:18px}
+.nav-btn.active .lab-num{color:var(--C)}
+.progress-bar{height:2px;background:var(--border);margin:0 20px;border-radius:1px;overflow:hidden}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--C),var(--M));transition:width .4s;border-radius:1px}
+.progress-txt{font-family:'DM Mono',monospace;font-size:9px;color:var(--muted);padding:6px 20px 16px;letter-spacing:1px}
+
+/* ─── MAIN CONTENT ─── */
+.content{overflow-y:auto;padding:0}
+.lab{display:none;padding:32px 36px 60px;animation:fadeUp .3s ease}
+.lab.active{display:block}
+@keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+
+/* ─── LAB HEADER ─── */
+.lab-header{margin-bottom:32px}
+.lab-tag{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:3px;text-transform:uppercase;color:var(--C);margin-bottom:8px;display:flex;align-items:center;gap:8px}
+.lab-tag::before{content:'';width:20px;height:1px;background:var(--C);display:inline-block}
+.lab-title{font-family:'Fraunces',serif;font-size:36px;font-weight:900;line-height:1.05;margin-bottom:8px}
+.lab-desc{color:var(--dim);font-size:14px;line-height:1.6;max-width:560px}
+
+/* ─── WORKSPACE GRID ─── */
+.workspace{display:grid;gap:20px}
+.workspace-2{grid-template-columns:1fr 1fr}
+.workspace-3{grid-template-columns:1fr 1fr 1fr}
+.workspace-sidebar{grid-template-columns:300px 1fr}
+@media(max-width:900px){.workspace-2,.workspace-3,.workspace-sidebar{grid-template-columns:1fr}}
+
+/* ─── PANEL / CARD ─── */
+.pane{background:var(--panel);border:1px solid var(--border);border-radius:var(--rad);padding:22px;transition:border-color .2s}
+.pane:hover{border-color:var(--border2)}
+.pane-title{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:16px;display:flex;align-items:center;gap:8px}
+.pane-title span{width:6px;height:6px;border-radius:50%;background:var(--C);display:inline-block}
+
+/* SCIENTIFIC / PEDAGOGICAL COMPANION */
+.companion-pane{margin-bottom:20px;background:linear-gradient(180deg,rgba(0,229,255,.05),rgba(19,22,29,.96));border-color:rgba(0,229,255,.16)}
+.companion-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.companion-card{background:var(--panel2);border:1px solid var(--border);border-radius:12px;padding:14px}
+.companion-card p{font-size:12px;line-height:1.65;color:var(--dim)}
+.companion-label{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:1.6px;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
+.companion-tags{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+.companion-tag{padding:5px 10px;border-radius:999px;background:rgba(255,255,255,.04);border:1px solid var(--border);font-family:'DM Mono',monospace;font-size:9px;letter-spacing:1px;color:var(--dim);text-transform:uppercase}
+.companion-note{margin-top:14px;border-radius:10px;padding:12px 14px;border:1px solid rgba(0,229,255,.16);background:rgba(0,229,255,.05)}
+.companion-note p{font-size:12px;line-height:1.65;color:var(--dim)}
+.companion-note.warn{background:rgba(255,229,0,.05);border-color:rgba(255,229,0,.2)}
+.companion-note.warn .companion-label{color:var(--Y)}
+.companion-note.danger{background:rgba(255,45,120,.05);border-color:rgba(255,45,120,.2)}
+.companion-note.danger .companion-label{color:var(--M)}
+.companion-details{margin-top:12px;border:1px solid var(--border);border-radius:10px;background:rgba(255,255,255,.02);overflow:hidden}
+.companion-details summary{cursor:pointer;list-style:none;padding:12px 14px;font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1.4px;text-transform:uppercase;color:var(--text)}
+.companion-details summary::-webkit-details-marker{display:none}
+.companion-details .details-body{padding:0 14px 14px}
+.companion-details .details-body p{font-size:12px;line-height:1.7;color:var(--dim)}
+.companion-notebook{margin-top:14px}
+.companion-notebook textarea{width:100%;min-height:130px;background:var(--panel2);border:1px solid var(--border);border-radius:10px;color:var(--text);padding:12px 14px;font-family:'DM Sans',sans-serif;font-size:13px;line-height:1.6;resize:vertical;outline:none}
+.companion-notebook textarea:focus{border-color:var(--C)}
+.companion-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.companion-btn{border:none;border-radius:999px;padding:8px 12px;font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1px;text-transform:uppercase;cursor:pointer;background:rgba(0,229,255,.14);color:var(--C);border:1px solid rgba(0,229,255,.24);transition:all .18s}
+.companion-btn:hover{background:rgba(0,229,255,.22)}
+.companion-btn.secondary{background:rgba(255,255,255,.05);color:var(--dim);border-color:var(--border)}
+.companion-btn.secondary:hover{color:var(--text);border-color:var(--border2)}
+.companion-foot{margin-top:8px;font-size:11px;color:var(--muted);line-height:1.6}
+
+/* ─── SLIDERS ─── */
+.ctrl-row{display:flex;align-items:center;gap:10px;margin-bottom:11px}
+.ctrl-lbl{font-family:'DM Mono',monospace;font-size:11px;font-weight:500;width:20px;flex-shrink:0;text-align:center}
+.lbl-C{color:var(--C)} .lbl-M{color:var(--M)} .lbl-Y{color:var(--Y)} .lbl-K{color:var(--K)}
+.lbl-R{color:var(--R)} .lbl-G{color:var(--G)} .lbl-B{color:var(--B)}
+input[type=range]{-webkit-appearance:none;flex:1;height:3px;border-radius:2px;background:var(--border2);outline:none;cursor:pointer}
+input[type=range].track-C{background:linear-gradient(90deg,var(--panel2) 0%,var(--C) 100%)}
+input[type=range].track-M{background:linear-gradient(90deg,var(--panel2) 0%,var(--M) 100%)}
+input[type=range].track-Y{background:linear-gradient(90deg,var(--panel2) 0%,var(--Y) 100%)}
+input[type=range].track-K{background:linear-gradient(90deg,var(--panel2) 0%,var(--K) 100%)}
+input[type=range].track-R{background:linear-gradient(90deg,var(--panel2) 0%,var(--R) 100%)}
+input[type=range].track-G{background:linear-gradient(90deg,var(--panel2) 0%,var(--G) 100%)}
+input[type=range].track-B{background:linear-gradient(90deg,var(--panel2) 0%,var(--B) 100%)}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:#fff;cursor:pointer;box-shadow:0 0 0 2px rgba(0,0,0,.5);transition:transform .1s}
+input[type=range]::-webkit-slider-thumb:hover{transform:scale(1.2)}
+.ctrl-val{font-family:'DM Mono',monospace;font-size:11px;color:var(--dim);width:32px;text-align:right}
+
+/* ─── COLOR SWATCH ─── */
+.swatch{border-radius:10px;border:1px solid rgba(255,255,255,.07);transition:background .15s}
+.swatch-lg{width:100%;height:130px}
+.swatch-sm{width:100%;height:70px}
+.swatch-xs{width:40px;height:40px;border-radius:6px;flex-shrink:0}
+
+/* ─── READOUT ─── */
+.readout{background:var(--panel2);border:1px solid var(--border);border-radius:8px;padding:12px 14px;font-family:'DM Mono',monospace;font-size:11px;color:var(--dim);margin-top:10px;line-height:1.8}
+.readout b{color:var(--text)}
+.readout .tag{font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:2px}
+
+/* ─── HINT / THEORY BOX ─── */
+.hint{background:rgba(0,229,255,.05);border:1px solid rgba(0,229,255,.15);border-radius:8px;padding:12px 14px;font-size:12px;color:var(--dim);line-height:1.6;margin-top:14px}
+.hint b{color:var(--C)}
+.hint.warn{background:rgba(255,229,0,.04);border-color:rgba(255,229,0,.2)}
+.hint.warn b{color:var(--Y)}
+.hint.danger{background:rgba(255,45,120,.04);border-color:rgba(255,45,120,.2)}
+.hint.danger b{color:var(--M)}
+
+/* ─── MIXING CIRCLES ─── */
+.mix-canvas{position:relative;width:100%;aspect-ratio:1;max-width:280px;margin:0 auto}
+.mix-canvas canvas{width:100%;height:100%}
+
+/* ─── CHANNEL STRIPS ─── */
+.channel-strip{border-radius:8px;padding:10px 12px;margin-bottom:8px;display:flex;align-items:center;gap:12px;border:1px solid var(--border)}
+.channel-strip .ch-name{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1px;text-transform:uppercase;width:60px}
+.channel-strip .ch-bar-wrap{flex:1;height:10px;background:var(--panel2);border-radius:5px;overflow:hidden}
+.channel-strip .ch-bar{height:100%;border-radius:5px;transition:width .2s}
+.channel-strip .ch-pct{font-family:'DM Mono',monospace;font-size:10px;color:var(--dim);width:36px;text-align:right}
+
+/* ─── GAMUT VIZ ─── */
+#gamutCanvas{width:100%;max-width:400px;display:block;margin:0 auto;cursor:crosshair}
+
+/* ─── RENDERING INTENT CARDS ─── */
+.ri-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+.ri-opt{background:var(--panel2);border:1.5px solid var(--border);border-radius:10px;padding:14px;cursor:pointer;transition:all .18s}
+.ri-opt:hover{border-color:var(--border2)}
+.ri-opt.active{border-color:var(--C);background:rgba(0,229,255,.07)}
+.ri-opt .ri-name{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--C);margin-bottom:4px}
+.ri-opt p{font-size:12px;color:var(--dim);line-height:1.5}
+
+/* ─── DOT GAIN CANVAS ─── */
+#dotGainCanvas{width:100%;max-width:100%;display:block}
+
+/* ─── GCR VISUAL ─── */
+.gcr-bars{margin:12px 0}
+
+/* ─── PRESET CHIPS ─── */
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin:10px 0}
+.chip{padding:4px 12px;border-radius:20px;border:1px solid var(--border);background:var(--panel2);font-family:'DM Mono',monospace;font-size:10px;color:var(--dim);cursor:pointer;transition:all .15s}
+.chip:hover{border-color:var(--border2);color:var(--text)}
+.chip.active{border-color:var(--C);color:var(--C);background:rgba(0,229,255,.08)}
+
+/* ─── TAC METER ─── */
+.tac-meter{margin-top:14px}
+.tac-track{height:12px;background:var(--panel2);border-radius:6px;overflow:hidden;position:relative;margin-bottom:6px}
+.tac-fill{height:100%;border-radius:6px;transition:width .25s,background .25s}
+.tac-marks{display:flex;justify-content:space-between;font-family:'DM Mono',monospace;font-size:9px;color:var(--muted);position:relative}
+.tac-val{font-family:'DM Mono',monospace;font-size:20px;font-weight:500;margin-top:6px}
+
+/* ─── COMPARE SWATCHES ─── */
+.compare-row{display:flex;gap:2px;border-radius:10px;overflow:hidden;height:80px;margin-bottom:8px}
+.compare-half{flex:1;display:flex;align-items:center;justify-content:center;font-family:'DM Mono',monospace;font-size:9px;letter-spacing:1px;text-transform:uppercase;color:rgba(255,255,255,.5)}
+
+/* ─── SCORE / BADGE ─── */
+.score-badge{display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:20px;font-family:'DM Mono',monospace;font-size:10px}
+.score-ok{background:rgba(0,255,136,.08);border:1px solid rgba(0,255,136,.25);color:var(--G)}
+.score-warn{background:rgba(255,229,0,.08);border:1px solid rgba(255,229,0,.25);color:var(--Y)}
+.score-err{background:rgba(255,45,120,.08);border:1px solid rgba(255,45,120,.25);color:var(--M)}
+
+/* ─── COLOR PICKER ENHANCED ─── */
+.color-picker-wrap{position:relative;margin-bottom:10px}
+.color-picker-wrap input[type=color]{width:100%;height:60px;border-radius:8px;border:1px solid var(--border);background:none;cursor:pointer;padding:4px}
+
+/* ─── SEPARATOR ─── */
+.sep{height:1px;background:var(--border);margin:20px 0}
+
+/* ─── PROFILE PICKER ─── */
+select{background:var(--panel2);border:1px solid var(--border);color:var(--text);font-family:'DM Mono',monospace;font-size:11px;padding:8px 12px;border-radius:8px;cursor:pointer;outline:none;width:100%}
+select:focus{border-color:var(--C)}
+label.field-lbl{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:6px;margin-top:14px}
+
+/* ─── RESPONSIVE SIDEBAR ─── */
+.menu-toggle{display:none;position:fixed;bottom:20px;right:20px;z-index:100;width:44px;height:44px;border-radius:50%;background:var(--C);border:none;cursor:pointer;font-size:18px;color:#000}
+@media(max-width:780px){
+  .app{grid-template-columns:1fr}
+  .sidebar{display:none;position:fixed;inset:0;z-index:90;width:240px;height:100vh}
+  .sidebar.open{display:flex}
+  .menu-toggle{display:flex;align-items:center;justify-content:center}
+  .lab{padding:20px 16px 60px}
+}
+@media(max-width:900px){.companion-grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+
+<div class="app">
+
+<aside class="sidebar" id="sidebar">
+  <div class="brand">
+    <div class="brand-sub">Interactive Labs</div>
+    <div class="brand-title">Prepress<br>Colour</div>
+  </div>
+  <nav class="nav">
+    <div class="nav-section">Laboratories</div>
+    <button class="nav-btn active" onclick="goLab(0,this)"><span class="lab-num">01</span>Additive RGB</button>
+    <button class="nav-btn" onclick="goLab(1,this)"><span class="lab-num">02</span>Subtractive CMY</button>
+    <button class="nav-btn" onclick="goLab(2,this)"><span class="lab-num">03</span>CMYK Channels</button>
+    <button class="nav-btn" onclick="goLab(3,this)"><span class="lab-num">04</span>TAC &amp; Ink Limits</button>
+    <button class="nav-btn" onclick="goLab(4,this)"><span class="lab-num">05</span>Color Spaces</button>
+    <button class="nav-btn" onclick="goLab(5,this)"><span class="lab-num">06</span>GCR &amp; UCR</button>
+    <button class="nav-btn" onclick="goLab(6,this)"><span class="lab-num">07</span>Dot Gain (TVI)</button>
+    <button class="nav-btn" onclick="goLab(7,this)"><span class="lab-num">08</span>Rendering Intents</button>
+    <button class="nav-btn" onclick="goLab(8,this)"><span class="lab-num">09</span>Soft Proofing</button>
+  </nav>
+  <div style="padding:0 20px 0px">
+    <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:11%"></div></div>
+    <div class="progress-txt" id="progressTxt">Lab 1 / 9</div>
+    
+    <a href="manual.html" target="_blank" style="display:flex; align-items:center; justify-content:center; gap:8px; width:100%; background:rgba(0,229,255,0.08); border:1px solid rgba(0,229,255,0.25); color:var(--C); padding:10px; border-radius:8px; font-family:'DM Mono',monospace; font-size:10px; text-transform:uppercase; letter-spacing:1px; text-decoration:none; margin-top:10px; transition:all 0.2s;" onmouseover="this.style.background='rgba(0,229,255,0.15)'" onmouseout="this.style.background='rgba(0,229,255,0.08)'">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path></svg>
+      User Manual
+    </a>
+  </div>
+  
+  <div style="margin-top: auto; padding: 15px 20px 20px; border-top: 1px solid var(--border); font-family: 'DM Sans', sans-serif; font-size: 10px; color: var(--muted); line-height: 1.5; font-style: italic;">
+    <span style="color: var(--dim); font-size: 11px; font-weight: 500; display: block; margin-bottom: 3px;">Georgios Korakakis</span>
+    Assistant Professor<br>
+    Department of Graphic Design and Visual Communication<br>
+    School of Applied Arts and Culture<br>
+    UNIWA (University of West Attica)
+  </div>
+</aside>
+
+<main class="content">
+
+<div class="lab active" id="lab0">
+  <div class="lab-header">
+    <div class="lab-tag">Laboratory 01</div>
+    <div class="lab-title">Additive Synthesis<br>of Light — RGB</div>
+    <div class="lab-desc">Three beams of light mix together. Each channel adds luminance. Move the sliders to see how light creates color.</div>
+  </div>
+
+  <div class="workspace workspace-sidebar">
+    <div>
+      <div class="pane">
+        <div class="pane-title"><span style="background:var(--R)"></span>Light Beams</div>
+        <div class="ctrl-row">
+          <span class="ctrl-lbl lbl-R">R</span>
+          <input type="range" class="track-R" min="0" max="255" value="220" id="rgbR" oninput="updateRGB()">
+          <span class="ctrl-val" id="vR">220</span>
+        </div>
+        <div class="ctrl-row">
+          <span class="ctrl-lbl lbl-G">G</span>
+          <input type="range" class="track-G" min="0" max="255" value="80" id="rgbG" oninput="updateRGB()">
+          <span class="ctrl-val" id="vG">80</span>
+        </div>
+        <div class="ctrl-row">
+          <span class="ctrl-lbl lbl-B">B</span>
+          <input type="range" class="track-B" min="0" max="255" value="40" id="rgbB" oninput="updateRGB()">
+          <span class="ctrl-val" id="vB">40</span>
+        </div>
+        <div class="swatch swatch-sm" id="rgbSwatch" style="margin-top:12px"></div>
+        <div class="readout" id="rgbReadout"></div>
+      </div>
+
+      <div class="pane" style="margin-top:16px">
+        <div class="pane-title"><span></span>Color Presets</div>
+        <div class="chips">
+          <span class="chip" onclick="setRGB(255,0,0)">Red</span>
+          <span class="chip" onclick="setRGB(0,255,0)">Green</span>
+          <span class="chip" onclick="setRGB(0,0,255)">Blue</span>
+          <span class="chip" onclick="setRGB(255,255,0)">Yellow</span>
+          <span class="chip" onclick="setRGB(0,255,255)">Cyan</span>
+          <span class="chip" onclick="setRGB(255,0,255)">Magenta</span>
+          <span class="chip" onclick="setRGB(255,255,255)">White</span>
+          <span class="chip" onclick="setRGB(0,0,0)">Black</span>
+          <span class="chip" onclick="setRGB(128,128,128)">50% Gray</span>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="pane">
+        <div class="pane-title"><span></span>RGB Beam Analysis</div>
+        <canvas id="rgbMixCanvas" width="1000" height="680" style="width:100%;border-radius:8px;display:block"></canvas>
+        <div class="hint">
+          <b>Additive Synthesis:</b> R+G = Yellow · G+B = Cyan · R+B = Magenta · R+G+B = White. Each channel <b>adds</b> luminance. This is the basis of monitors, projectors, and digital displays. <br><br>
+          <b>🎯 Try This:</b> Lower all sliders to 0. Slowly increase Blue. Notice how it builds light from total darkness.
+        </div>
+      </div>
+
+      <div class="pane" style="margin-top:16px">
+        <div class="pane-title"><span></span>Individual Channels</div>
+        <div id="rgbChannelStrips"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="lab" id="lab1">
+  <div class="lab-header">
+    <div class="lab-tag">Laboratory 02</div>
+    <div class="lab-title">Subtractive Synthesis<br>CMY — Pigments</div>
+    <div class="lab-desc">Pigments <em>absorb</em> part of the white light. Adjust the concentration of each pigment and observe what color reaches the eye.</div>
+  </div>
+
+  <div class="workspace workspace-sidebar">
+    <div>
+      <div class="pane">
+        <div class="pane-title"><span style="background:var(--C)"></span>Pigments (0–100%)</div>
+        <div class="ctrl-row">
+          <span class="ctrl-lbl lbl-C">C</span>
+          <input type="range" class="track-C" min="0" max="100" value="80" id="cmyC" oninput="updateCMY()">
+          <span class="ctrl-val" id="vCC">80%</span>
+        </div>
+        <div class="ctrl-row">
+          <span class="ctrl-lbl lbl-M">M</span>
+          <input type="range" class="track-M" min="0" max="100" value="10" id="cmyM" oninput="updateCMY()">
+          <span class="ctrl-val" id="vCM">10%</span>
+        </div>
+        <div class="ctrl-row">
+          <span class="ctrl-lbl lbl-Y">Y</span>
+          <input type="range" class="track-Y" min="0" max="100" value="10" id="cmyY" oninput="updateCMY()">
+          <span class="ctrl-val" id="vCY">10%</span>
+        </div>
+        <div class="swatch swatch-sm" id="cmySwatch" style="margin-top:12px"></div>
+        <div class="readout" id="cmyReadout"></div>
+      </div>
+
+      <div class="pane" style="margin-top:16px">
+        <div class="pane-title"><span></span>What each pigment absorbs</div>
+        <div style="font-size:12px;color:var(--dim);line-height:1.9">
+          <span style="color:var(--C)">■ Cyan</span> → absorbs <span style="color:var(--R)">Red (620–700nm Broadband)</span><br>
+          <span style="color:var(--M)">■ Magenta</span> → absorbs <span style="color:var(--G)">Green (500–590nm Broadband)</span><br>
+          <span style="color:var(--Y)">■ Yellow</span> → absorbs <span style="color:var(--B)">Blue (400–480nm Broadband)</span>
+        </div>
+        <div class="chips" style="margin-top:10px">
+          <span class="chip" onclick="setCMY(100,0,0)">100% C</span>
+          <span class="chip" onclick="setCMY(0,100,0)">100% M</span>
+          <span class="chip" onclick="setCMY(0,0,100)">100% Y</span>
+          <span class="chip" onclick="setCMY(100,100,0)">C+M</span>
+          <span class="chip" onclick="setCMY(100,0,100)">C+Y</span>
+          <span class="chip" onclick="setCMY(0,100,100)">M+Y</span>
+          <span class="chip" onclick="setCMY(100,100,100)">C+M+Y</span>
+          <span class="chip" onclick="setCMY(0,0,0)">Clear</span>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="pane">
+        <div class="pane-title"><span></span>Spectral Absorption</div>
+        <canvas id="cmyCanvas" width="500" height="300" style="width:100%;border-radius:8px;display:block"></canvas>
+        <div class="hint warn">
+          <b>Additivity Failure (Subtractive Impurity):</b> Due to the physical imperfections of real inks (spectral scattering & unwanted absorptions), 100% C+M+Y produces a muddy brown-gray, not a pure black. <br><span style="font-size:10px; opacity:0.8;">(Note: Real ink physics requires complex Kubelka-Munk equations, simplified here via transmission heuristics).</span><br><br>
+          <b>🎯 Try This:</b> Set C=100 and Y=100. Watch the spectral graph show only Green passing through. Cyan absorbs Red, Yellow absorbs Blue, leaving Green!
+        </div>
+      </div>
+
+      <div class="pane" style="margin-top:16px">
+        <div class="pane-title"><span></span>CMY vs Ideal Black</div>
+        <div class="compare-row">
+          <div class="compare-half" id="cmyImpure" style="flex:1">CMY 100%</div>
+          <div class="compare-half" style="background:#111;flex:1">K 100%</div>
+        </div>
+        <div class="readout" id="cmyImpureNote" style="font-size:11px"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="lab" id="lab2">
+  <div class="lab-header">
+    <div class="lab-tag">Laboratory 03</div>
+    <div class="lab-title">CMYK — The 4<br>Printing Channels</div>
+    <div class="lab-desc">Each channel is printed on a separate plate. Observe how the 4 halftone screens combine to reconstruct the final color.</div>
+  </div>
+
+  <div class="workspace workspace-sidebar">
+    <div>
+      <div class="pane">
+        <div class="pane-title"><span></span>CMYK Values</div>
+        <div class="ctrl-row">
+          <span class="ctrl-lbl lbl-C">C</span>
+          <input type="range" class="track-C" min="0" max="100" value="65" id="ck_C" oninput="updateCMYK()">
+          <span class="ctrl-val" id="vc_C">65%</span>
+        </div>
+        <div class="ctrl-row">
+          <span class="ctrl-lbl lbl-M">M</span>
+          <input type="range" class="track-M" min="0" max="100" value="20" id="ck_M" oninput="updateCMYK()">
+          <span class="ctrl-val" id="vc_M">20%</span>
+        </div>
+        <div class="ctrl-row">
+          <span class="ctrl-lbl lbl-Y">Y</span>
+          <input type="range" class="track-Y" min="0" max="100" value="0" id="ck_Y" oninput="updateCMYK()">
+          <span class="ctrl-val" id="vc_Y">0%</span>
+        </div>
+        <div class="ctrl-row">
+          <span class="ctrl-lbl lbl-K">K</span>
+          <input type="range" class="track-K" min="0" max="100" value="0" id="ck_K" oninput="updateCMYK()">
+          <span class="ctrl-val" id="vc_K">0%</span>
+        </div>
+        <div class="swatch swatch-sm" id="cmykSwatch" style="margin-top:12px"></div>
+        <div class="readout" id="cmykReadout"></div>
+
+        <div class="chips" style="margin-top:14px">
+          <span class="chip" onclick="setCMYK(0,100,100,0)">Red</span>
+          <span class="chip" onclick="setCMYK(100,0,100,0)">Green</span>
+          <span class="chip" onclick="setCMYK(100,100,0,0)">Blue</span>
+          <span class="chip" onclick="setCMYK(0,0,0,100)">Key Black</span>
+          <span class="chip" onclick="setCMYK(60,50,50,30)">Warm Shadow</span>
+          <span class="chip" onclick="setCMYK(10,10,10,0)">10% Gray</span>
+          <span class="chip" onclick="setCMYK(0,30,90,0)">Orange</span>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="pane">
+        <div class="pane-title"><span></span>The 4 Channels — Individual &amp; Combined</div>
+        <canvas id="cmykChanCanvas" width="600" height="320" style="width:100%;border-radius:8px;display:block"></canvas>
+        <div class="hint">
+          <b>Each channel = a separate printing plate.</b> The K plate is typically printed <b>first</b>, acting as the registration key from which all other colour plates align. Without K, dark colours are reproduced purely in CMY — lacking density and wasting ink. <br><br>
+          <b>🎯 Try This:</b> Select "Orange" from the presets. Notice how it is built only with M and Y dots, avoiding C and K entirely to maintain high saturation.
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="lab" id="lab3">
+  <div class="lab-header">
+    <div class="lab-tag">Laboratory 04</div>
+    <div class="lab-title">TAC &amp; TIL —<br>Total Area Coverage</div>
+    <div class="lab-desc">How much ink can a paper substrate accept? Experiment with different printing conditions and see when the limit is breached.</div>
+  </div>
+
+  <div class="workspace workspace-sidebar">
+    <div>
+      <div class="pane">
+        <div class="pane-title"><span></span>CMYK Values</div>
+        <div class="ctrl-row">
+          <span class="ctrl-lbl lbl-C">C</span>
+          <input type="range" class="track-C" min="0" max="100" value="80" id="tac_C" oninput="updateTAC()">
+          <span class="ctrl-val" id="tv_C">80%</span>
+        </div>
+        <div class="ctrl-row">
+          <span class="ctrl-lbl lbl-M">M</span>
+          <input type="range" class="track-M" min="0" max="100" value="70" id="tac_M" oninput="updateTAC()">
+          <span class="ctrl-val" id="tv_M">70%</span>
+        </div>
+        <div class="ctrl-row">
+          <span class="ctrl-lbl lbl-Y">Y</span>
+          <input type="range" class="track-Y" min="0" max="100" value="60" id="tac_Y" oninput="updateTAC()">
+          <span class="ctrl-val" id="tv_Y">60%</span>
+        </div>
+        <div class="ctrl-row">
+          <span class="ctrl-lbl lbl-K">K</span>
+          <input type="range" class="track-K" min="0" max="100" value="40" id="tac_K" oninput="updateTAC()">
+          <span class="ctrl-val" id="tv_K">40%</span>
+        </div>
+      </div>
+
+      <div class="pane" style="margin-top:16px">
+        <label class="field-lbl">Printing Condition</label>
+        <select id="tacProfile" onchange="updateTAC()">
+          <option value="330">ISO Coated v2 (FOGRA39) — TAC 330%</option>
+          <option value="300">ISO Coated 300% — TAC 300%</option>
+          <option value="300">Uncoated White Stock (FOGRA47) — TAC 300%</option>
+          <option value="260">Newsprint-like Stock (teaching proxy) — TAC 260%</option>
+          <option value="300">GRACoL 2006 Coated — TAC 300%</option>
+          <option value="300">SWOP Web Offset — TAC 300%</option>
+        </select>
+
+        <div class="tac-meter">
+          <div class="tac-track">
+            <div class="tac-fill" id="tacFill"></div>
+          </div>
+          <div class="tac-marks">
+            <span>0%</span><span>100%</span><span>200%</span><span>300%</span><span>400%</span>
+          </div>
+          <div class="tac-val" id="tacVal">—</div>
+          <div id="tacBadge" style="margin-top:8px"></div>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="pane">
+        <div class="pane-title"><span></span>Printed Result</div>
+        <canvas id="tacCanvas" width="560" height="380" style="width:100%;border-radius:8px;display:block"></canvas>
+        <div class="hint warn">
+          <b>Exceeding TAC / TIL →</b> causes ink smearing, drying issues (set-off), and paper tearing. Proper ICC profiles automatically ensure compliance with the specific TAC limit of the press.<br><br>
+          <b>🎯 Try This:</b> Move all 4 sliders to 100%. Watch the system warn you about severe mechanical failure.
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="lab" id="lab4">
+  <div class="lab-header">
+    <div class="lab-tag">Laboratory 05</div>
+    <div class="lab-title">Color Spaces<br>&amp; Gamut Boundaries</div>
+    <div class="lab-desc">Every device "sees" a different range of colors. Select color spaces and compare their gamuts on the CIE xy chromaticity diagram.</div>
+  </div>
+
+  <div class="workspace workspace-sidebar">
+    <div>
+      <div class="pane">
+        <div class="pane-title"><span></span>Active Spaces</div>
+        <div id="csCheckboxes" style="font-size:13px;line-height:2.2">
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer"><input type="checkbox" checked onchange="drawGamut()" data-cs="srgb"> <span style="color:#4488ff">sRGB</span><span style="color:var(--muted);font-size:11px;margin-left:4px">IEC 61966-2-1</span></label>
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer"><input type="checkbox" checked onchange="drawGamut()" data-cs="argb"> <span style="color:#00ff88">Adobe RGB (1998)</span></label>
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer"><input type="checkbox" onchange="drawGamut()" data-cs="pphoto"> <span style="color:#ff8800">ProPhoto RGB</span></label>
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer"><input type="checkbox" checked onchange="drawGamut()" data-cs="fogra39"> <span style="color:#ff2d78">FOGRA39 CMYK</span><span style="color:var(--muted);font-size:11px;margin-left:4px">Coated</span></label>
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer"><input type="checkbox" onchange="drawGamut()" data-cs="fogra47"> <span style="color:#ff6644">FOGRA47</span><span style="color:var(--muted);font-size:11px;margin-left:4px">Uncoated</span></label>
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer"><input type="checkbox" onchange="drawGamut()" data-cs="gracol"> <span style="color:#ffcc00">GRACoL Coated</span></label>
+        </div>
+        <div class="hint" style="margin-top:14px">
+          <b>Observation:</b> The CMYK gamut (pink) is <b>smaller</b> than sRGB and significantly smaller than Adobe RGB. Colors outside the CMYK gamut will be "clipped" during printing.<br><br>
+          <span style="font-size:10px; opacity:0.8;">Remember: This 2D projection ignores the L* (Lightness) axis of a true 3D gamut volume.</span>
+        </div>
+      </div>
+
+      <div class="pane" style="margin-top:16px">
+        <div class="pane-title"><span></span>Gamut Pct vs Visible</div>
+        <div id="gamutPctList" style="font-size:12px;font-family:'DM Mono',monospace;line-height:2"></div>
+      </div>
+    </div>
+
+    <div class="pane">
+      <div class="pane-title"><span></span>CIE 1931 xy Chromaticity Diagram</div>
+      <canvas id="gamutCanvas" width="520" height="520" style="width:100%;max-width:520px;display:block;border-radius:8px"></canvas>
+    </div>
+  </div>
+</div>
+
+<div class="lab" id="lab5">
+  <div class="lab-header">
+    <div class="lab-tag">Laboratory 06</div>
+    <div class="lab-title">Achromatic Reproduction<br>GCR &amp; UCR</div>
+    <div class="lab-desc">How much CMY is replaced by K? Adjust the GCR level and see how the CMYK composition changes while the visual color remains identical.</div>
+  </div>
+
+  <div class="workspace workspace-sidebar">
+    <div>
+      <div class="pane">
+        <div class="pane-title"><span></span>Input Color (RGB)</div>
+        <div class="ctrl-row">
+          <span class="ctrl-lbl lbl-R">R</span>
+          <input type="range" class="track-R" min="0" max="255" value="60" id="gcr_R" oninput="updateGCR()">
+          <span class="ctrl-val" id="gv_R">60</span>
+        </div>
+        <div class="ctrl-row">
+          <span class="ctrl-lbl lbl-G">G</span>
+          <input type="range" class="track-G" min="0" max="255" value="80" id="gcr_G" oninput="updateGCR()">
+          <span class="ctrl-val" id="gv_G">80</span>
+        </div>
+        <div class="ctrl-row">
+          <span class="ctrl-lbl lbl-B">B</span>
+          <input type="range" class="track-B" min="0" max="255" value="180" id="gcr_B" oninput="updateGCR()">
+          <span class="ctrl-val" id="gv_B">180</span>
+        </div>
+        <div class="swatch swatch-xs" id="gcrInputSwatch" style="width:100%;height:40px;margin-top:8px;border-radius:8px"></div>
+
+        <div class="sep"></div>
+        <div class="pane-title" style="margin-bottom:10px"><span></span>GCR Level</div>
+        <div class="ctrl-row">
+          <span class="ctrl-lbl" style="color:var(--K);width:30px;font-size:10px">GCR</span>
+          <input type="range" class="track-K" min="0" max="100" value="50" id="gcr_level" oninput="updateGCR()">
+          <span class="ctrl-val" id="gv_gcr">50%</span>
+        </div>
+        <div class="chips" style="margin-top:8px">
+          <span class="chip" onclick="setGCR(0)">None</span>
+          <span class="chip" onclick="setGCR(25)">Light</span>
+          <span class="chip active" onclick="setGCR(50)">Medium</span>
+          <span class="chip" onclick="setGCR(75)">Heavy</span>
+          <span class="chip" onclick="setGCR(100)">Maximum</span>
+        </div>
+      </div>
+
+      <div class="pane" style="margin-top:16px">
+        <div class="pane-title"><span></span>GCR Benefits</div>
+        <div style="font-size:12px;color:var(--dim);line-height:1.8">
+          ✓ Reduced ink costs<br>
+          ✓ Stable gray balance on press<br>
+          ✓ Lower TAC (Total Area Coverage)<br>
+          ✓ Better printability and drying
+        </div>
+      </div>
+
+      <div class="pane" style="margin-top:16px">
+        <div class="pane-title"><span style="background:#ff8800"></span>GCR vs UCR — Key Difference</div>
+        <div style="font-size:12px;color:var(--dim);line-height:1.8">
+          <b style="color:#00e5ff">GCR</b> (Gray Component Replacement)<br>
+          Replaces the <em>gray component</em> of <b>any colour</b> — chromatic or neutral — with K. Applies across the entire colour range. Reduces CMY consumption drastically.<br><br>
+          <b style="color:#ff8800">UCR</b> (Under Colour Removal)<br>
+          Replaces CMY only in <b>neutral / achromatic areas</b> (shadows and near-neutral greys). Has no effect on highly saturated colours.<br><br>
+          <div style="background:rgba(255,255,255,0.03);padding:8px;border-radius:6px;margin-top:6px;border:1px solid var(--border)">
+            <b style="color:var(--text);font-size:11px">Educational Takeaway:</b><br>
+            <span style="font-size:11px">GCR makes the press run much more stable. If CMY inks fluctuate during printing, a high GCR image won't shift color as much because the gray structure is anchored by Black (K).</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="pane">
+        <div class="pane-title"><span></span>CMYK Composition Comparison</div>
+        <canvas id="gcrCanvas" width="580" height="360" style="width:100%;border-radius:8px;display:block"></canvas>
+        <div class="gcr-bars" id="gcrBars"></div>
+        <div class="hint">
+          <b>Same color, different composition:</b> By increasing GCR, the achromatic gray part of CMY is replaced by K. The final printed color remains theoretically unchanged, but the ink balance is highly optimized.
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="lab" id="lab6">
+  <div class="lab-header">
+    <div class="lab-tag">Laboratory 07</div>
+    <div class="lab-title">Tone Value Increase<br>TVI (Dot Gain)</div>
+    <div class="lab-desc">A halftone dot always prints larger than intended. Select a paper surface and see how dot gain distorts the tonal range.</div>
+  </div>
+
+  <div class="workspace workspace-sidebar">
+    <div>
+      <div class="pane">
+        <div class="pane-title"><span></span>Paper Surface</div>
+        <div class="chips" id="dgPaperChips">
+          <span class="chip active" onclick="setDGPaper('coated',this)">Coated (FOGRA39-inspired)</span>
+          <span class="chip" onclick="setDGPaper('uncoated',this)">Uncoated</span>
+          <span class="chip" onclick="setDGPaper('news',this)">Newsprint</span>
+        </div>
+
+        <div style="margin-top:16px">
+          <div class="pane-title" style="margin-bottom:8px"><span></span>Digital File Tone</div>
+          <div class="ctrl-row">
+            <span style="font-family:'DM Mono',monospace;font-size:11px;color:var(--dim);width:20px">%</span>
+            <input type="range" min="0" max="100" value="50" id="dgTone" oninput="updateDotGain()">
+            <span class="ctrl-val" id="dg_file">50%</span>
+          </div>
+        </div>
+
+        <div class="readout" id="dgReadout" style="margin-top:16px"></div>
+      </div>
+
+      <div class="pane" style="margin-top:16px">
+        <div class="pane-title"><span></span>Reference TVI Values</div>
+        <div style="font-size:11px;font-family:'DM Mono',monospace;line-height:2;color:var(--dim)">
+          Coated (ISO 12647-2):<br>
+          &nbsp;40% file → ~57% printed (+17%)<br><br>
+          Uncoated:<br>
+          &nbsp;40% file → ~66% printed (+26%)<br><br>
+          Newsprint:<br>
+          &nbsp;40% file → ~70% printed (+30%)
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="pane">
+        <div class="pane-title"><span></span>TVI Curve Plot</div>
+        <canvas id="dotGainCanvas" width="580" height="400" style="width:100%;border-radius:8px;display:block"></canvas>
+        <div class="hint warn">
+          <b>Dot Gain Compensation:</b> Standard ICC profiles automatically calculate and compensate for this gain. In Photoshop/InDesign, selecting the correct output profile applies the inverse curve to the file during export.
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="lab" id="lab7">
+  <div class="lab-header">
+    <div class="lab-tag">Laboratory 08</div>
+    <div class="lab-title">Rendering Intents &amp;<br>Gamut Mapping</div>
+    <div class="lab-desc">How do we handle colors that "don't fit" in the CMYK gamut? Select a rendering intent and observe the gamut mapping strategy in real-time.</div>
+  </div>
+
+  <div class="workspace workspace-sidebar">
+    <div>
+      <div class="pane">
+        <div class="pane-title"><span></span>Input Color (RGB)</div>
+        <div class="ctrl-row">
+          <span class="ctrl-lbl lbl-R">R</span>
+          <input type="range" class="track-R" min="0" max="255" value="255" id="ri_R" oninput="updateRI()">
+          <span class="ctrl-val" id="rv_R">255</span>
+        </div>
+        <div class="ctrl-row">
+          <span class="ctrl-lbl lbl-G">G</span>
+          <input type="range" class="track-G" min="0" max="255" value="0" id="ri_G" oninput="updateRI()">
+          <span class="ctrl-val" id="rv_G">0</span>
+        </div>
+        <div class="ctrl-row">
+          <span class="ctrl-lbl lbl-B">B</span>
+          <input type="range" class="track-B" min="0" max="255" value="0" id="ri_B" oninput="updateRI()">
+          <span class="ctrl-val" id="rv_B">0</span>
+        </div>
+        <div class="swatch swatch-xs" id="riInputSwatch" style="width:100%;height:36px;border-radius:8px;margin:10px 0"></div>
+        <div class="chips">
+          <span class="chip" onclick="setRI_color(255,0,0)">Vivid Red</span>
+          <span class="chip" onclick="setRI_color(0,200,255)">Vivid Cyan</span>
+          <span class="chip" onclick="setRI_color(50,200,50)">Vivid Green</span>
+          <span class="chip" onclick="setRI_color(255,120,0)">Orange</span>
+          <span class="chip" onclick="setRI_color(80,80,180)">Medium Blue</span>
+          <span class="chip" onclick="setRI_color(30,30,40)">Deep Shadow</span>
+        </div>
+      </div>
+
+      <div class="pane" style="margin-top:16px">
+        <div class="pane-title"><span></span>Rendering Intent</div>
+        <div class="ri-row">
+          <div class="ri-opt active" onclick="selectRI('perceptual',this)"><div class="ri-name">Perceptual</div><p>Compresses the entire gamut. Best for photographs.</p></div>
+          <div class="ri-opt" onclick="selectRI('relative',this)"><div class="ri-name">Relative Col.</div><p>Clips out-of-gamut. Preserves in-gamut exactness.</p></div>
+          <div class="ri-opt" onclick="selectRI('absolute',this)"><div class="ri-name">Absolute Col.</div><p>Soft proofing. Simulates paper white colorimetry — including substrate tint.</p></div>
+          <div class="ri-opt" onclick="selectRI('saturation',this)"><div class="ri-name">Saturation</div><p>Maximizes chroma. Best for charts & infographics.</p></div>
+        </div>
+
+        <div class="sep" style="margin:12px 0"></div>
+        <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-size:12px; color:var(--text)">
+          <input type="checkbox" id="ri_bpc" checked onchange="updateRI()" style="width:16px; height:16px; cursor:pointer;">
+          <b>Black Point Compensation (BPC)</b>
+        </label>
+        <p style="font-size:11px; color:var(--dim); margin-top:4px; margin-left:24px; line-height:1.5;">Scales source shadows to match the destination's darkest black, preventing shadow clipping and loss of detail.</p>
+      </div>
+    </div>
+
+    <div>
+      <div class="pane">
+        <div class="pane-title"><span></span>Conversion Result RGB → CMYK</div>
+        <canvas id="riCanvas" width="580" height="420" style="width:100%;border-radius:8px;display:block"></canvas>
+        <div class="readout" id="riReadout" style="margin-top:10px"></div>
+        <div class="hint" style="margin-top:10px">
+          <b>🎯 Try This:</b> Select "Deep Shadow" preset. Toggle BPC on and off using "Relative Col." intent. Notice how turning BPC off heavily clips the deep shadows, destroying contrast!
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="lab" id="lab8">
+  <div class="lab-header">
+    <div class="lab-tag">Laboratory 09</div>
+    <div class="lab-title">Soft Proofing —<br>Press Simulation</div>
+    <div class="lab-desc">What will the final print look like? Select a color and a press profile to simulate the final output without wasting paper.</div>
+  </div>
+
+  <div class="workspace workspace-sidebar">
+    <div>
+      <div class="pane">
+        <div class="pane-title"><span></span>Screen Color (Adobe RGB approx.)</div>
+        <div class="color-picker-wrap">
+          <input type="color" id="spColorPicker" value="#3a7bd5" oninput="updateSoftProof()">
+        </div>
+        <div class="ctrl-row" style="margin-top:8px">
+          <span class="ctrl-lbl lbl-R">R</span>
+          <input type="range" class="track-R" min="0" max="255" value="58" id="sp_R" oninput="updateSPfromSliders()">
+          <span class="ctrl-val" id="spv_R">58</span>
+        </div>
+        <div class="ctrl-row">
+          <span class="ctrl-lbl lbl-G">G</span>
+          <input type="range" class="track-G" min="0" max="255" value="123" id="sp_G" oninput="updateSPfromSliders()">
+          <span class="ctrl-val" id="spv_G">123</span>
+        </div>
+        <div class="ctrl-row">
+          <span class="ctrl-lbl lbl-B">B</span>
+          <input type="range" class="track-B" min="0" max="255" value="213" id="sp_B" oninput="updateSPfromSliders()">
+          <span class="ctrl-val" id="spv_B">213</span>
+        </div>
+
+        <div class="sep"></div>
+        <label class="field-lbl">Output ICC Profile</label>
+        <select id="spProfile" onchange="updateSoftProof()">
+          <option value="fogra39">ISO Coated v2 — FOGRA39</option>
+          <option value="fogra47">Uncoated White Stock — FOGRA47</option>
+          <option value="fogra51">Coated FOGRA51 (2013)</option>
+          <option value="news">Newsprint-like Proxy (not FOGRA45)</option>
+          <option value="gracol">GRACoL 2006 Coated</option>
+        </select>
+      </div>
+
+      <div class="pane" style="margin-top:16px">
+        <div class="pane-title"><span></span>CIEDE2000 — Color Distance</div>
+        <div id="spDeltaE" style="font-family:'DM Mono',monospace"></div>
+      </div>
+    </div>
+
+    <div>
+      <div class="pane">
+        <div class="pane-title"><span></span>Comparison: Screen vs Print</div>
+        <canvas id="spCanvas" width="580" height="440" style="width:100%;border-radius:8px;display:block"></canvas>
+        <div class="readout" id="spReadout" style="margin-top:10px"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</main>
+</div>
+
+<button class="menu-toggle" onclick="document.getElementById('sidebar').classList.toggle('open')">☰</button>
+
+<script>
+// ══════════════════════════════════════════
+// NAVIGATION
+// ══════════════════════════════════════════
+let currentLab = 0;
+function goLab(idx, btn) {
+  document.querySelectorAll('.lab').forEach(function(l) { l.classList.remove('active'); });
+  document.querySelectorAll('.nav-btn').forEach(function(b) { b.classList.remove('active'); });
+  document.getElementById('lab' + idx).classList.add('active');
+  btn.classList.add('active');
+  currentLab = idx;
+  const pct = Math.round((idx + 1) / 9 * 100);
+  document.getElementById('progressFill').style.width = pct + '%';
+  document.getElementById('progressTxt').textContent = 'Lab ' + (idx + 1) + ' / 9';
+  document.getElementById('sidebar').classList.remove('open');
+  
+  if (idx === 0) updateRGB();
+  if (idx === 1) updateCMY();
+  if (idx === 2) updateCMYK();
+  if (idx === 3) updateTAC();
+  if (idx === 4) drawGamut();
+  if (idx === 5) updateGCR();
+  if (idx === 6) { dgPaper = 'coated'; updateDotGain(); }
+  if (idx === 7) updateRI();
+  if (idx === 8) updateSoftProof();
+}
+
+// ══════════════════════════════════════════
+// SCIENTIFIC MATH HELPERS
+// ══════════════════════════════════════════
+function prepCanvas(canvas) {
+  var dpr = window.devicePixelRatio || 1;
+  var rect = canvas.getBoundingClientRect();
+  var w = rect.width;
+  var h = rect.height;
+  if (w === 0 || h === 0) { w = parseInt(canvas.getAttribute('width')); h = parseInt(canvas.getAttribute('height')); dpr = 1; }
+  canvas.width = w * dpr;
+  canvas.height = h * dpr;
+  var ctx = canvas.getContext('2d');
+  ctx.scale(dpr, dpr);
+  return { cx: ctx, cw: w, ch: h };
+}
+
+function srgbToLin(c) {
+  return c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+}
+function linToSrgb(c) {
+  return c <= 0.0031308 ? c * 12.92 : 1.055 * Math.pow(c, 1 / 2.4) - 0.055;
+}
+function cmykToRgb(c, m, y, k) {
+  return [
+    Math.round(255 * (1 - c / 100) * (1 - k / 100)),
+    Math.round(255 * (1 - m / 100) * (1 - k / 100)),
+    Math.round(255 * (1 - y / 100) * (1 - k / 100))
+  ];
+}
+function hexColor(r, g, b) {
+  let rh = Math.max(0, Math.min(255, Math.round(r))).toString(16).padStart(2, '0');
+  let gh = Math.max(0, Math.min(255, Math.round(g))).toString(16).padStart(2, '0');
+  let bh = Math.max(0, Math.min(255, Math.round(b))).toString(16).padStart(2, '0');
+  return '#' + rh + gh + bh;
+}
+function rgbToLab(r, g, b) {
+  let R = srgbToLin(r / 255);
+  let G = srgbToLin(g / 255);
+  let B = srgbToLin(b / 255);
+  let X = R * 0.4124564 + G * 0.3575761 + B * 0.1804375;
+  let Y = R * 0.2126729 + G * 0.7151522 + B * 0.0721750;
+  let Z = R * 0.0193339 + G * 0.1191920 + B * 0.9503041;
+  X /= 0.95047;
+  Y /= 1.00000;
+  Z /= 1.08883;
+  let f = function(t) { return t > 0.008856 ? Math.pow(t, 1 / 3) : 7.787 * t + 16 / 116; };
+  return [116 * f(Y) - 16, 500 * (f(X) - f(Y)), 200 * (f(Y) - f(Z))];
+}
+function deltaE(r1, g1, b1, r2, g2, b2) {
+  const lab1 = rgbToLab(r1, g1, b1);
+  const lab2 = rgbToLab(r2, g2, b2);
+  const L1 = lab1[0], a1 = lab1[1], b1_ = lab1[2];
+  const L2 = lab2[0], a2 = lab2[1], b2_ = lab2[2];
+  const C1 = Math.sqrt(a1*a1 + b1_*b1_);
+  const C2 = Math.sqrt(a2*a2 + b2_*b2_);
+  const Cbar = (C1 + C2) / 2.0;
+  const G = 0.5 * (1 - Math.sqrt(Math.pow(Cbar, 7) / (Math.pow(Cbar, 7) + Math.pow(25, 7))));
+  const a1p = a1 * (1.0 + G);
+  const a2p = a2 * (1.0 + G);
+  const C1p = Math.sqrt(a1p*a1p + b1_*b1_);
+  const C2p = Math.sqrt(a2p*a2p + b2_*b2_);
+  let h1p = (a1p === 0 && b1_ === 0) ? 0 : Math.atan2(b1_, a1p) * (180/Math.PI);
+  let h2p = (a2p === 0 && b2_ === 0) ? 0 : Math.atan2(b2_, a2p) * (180/Math.PI);
+  const h1p_norm = h1p >= 0 ? h1p : h1p + 360;
+  const h2p_norm = h2p >= 0 ? h2p : h2p + 360;
+  const dLp = L2 - L1;
+  const dCp = C2p - C1p;
+  let dhp = 0;
+  if (C1p * C2p !== 0) {
+    if (Math.abs(h2p_norm - h1p_norm) <= 180) dhp = h2p_norm - h1p_norm;
+    else if (h2p_norm - h1p_norm > 180) dhp = h2p_norm - h1p_norm - 360;
+    else dhp = h2p_norm - h1p_norm + 360;
+  }
+  const dHp = 2 * Math.sqrt(C1p * C2p) * Math.sin((dhp / 2) * (Math.PI/180));
+  const Lbar = (L1 + L2) / 2.0;
+  const Cbarp = (C1p + C2p) / 2.0;
+  let hbarp = h1p_norm + h2p_norm;
+  if (C1p * C2p !== 0) {
+    if (Math.abs(h1p_norm - h2p_norm) <= 180) hbarp = (h1p_norm + h2p_norm) / 2.0;
+    else if (h1p_norm + h2p_norm < 360) hbarp = (h1p_norm + h2p_norm + 360) / 2.0;
+    else hbarp = (h1p_norm + h2p_norm - 360) / 2.0;
+  }
+  const T = 1 - 0.17 * Math.cos((hbarp - 30) * Math.PI/180) + 0.24 * Math.cos((2*hbarp) * Math.PI/180) + 0.32 * Math.cos((3*hbarp + 6) * Math.PI/180) - 0.20 * Math.cos((4*hbarp - 63) * Math.PI/180);
+  const dRo = 30 * Math.exp(-Math.pow((hbarp - 275)/25, 2));
+  const RC = 2 * Math.sqrt(Math.pow(Cbarp, 7) / (Math.pow(Cbarp, 7) + Math.pow(25, 7)));
+  const SL = 1 + ((0.015 * Math.pow(Lbar - 50, 2)) / Math.sqrt(20 + Math.pow(Lbar - 50, 2)));
+  const SC = 1 + 0.045 * Cbarp;
+  const SH = 1 + 0.015 * Cbarp * T;
+  const RT = -Math.sin((2 * dRo) * Math.PI/180) * RC;
+  return Math.sqrt(Math.pow(dLp / SL, 2) + Math.pow(dCp / SC, 2) + Math.pow(dHp / SH, 2) + RT * (dCp / SC) * (dHp / SH));
+}
+function lerp(a, b, t) { return a + (b - a) * t; }
+function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
+
+const labCompanions = [
+  {
+    objective: 'Distinguish additive light mixing from pigment mixing and recognise why physically meaningful RGB blending must be performed in linear light before display encoding.',
+    inquiry: 'Move one RGB channel at a time, then compare equal-channel settings such as 64 / 64 / 64 and 220 / 220 / 220. Record what changes in chromaticity and what changes only in lightness.',
+    variables: 'Independent variables: R, G, B channel intensities. Observables: swatch colour, CIELAB coordinates, relative channel percentages, and the overlap geometry of the three light beams.',
+    model: 'The simulation linearises sRGB code values, adds radiometric channel energy, and then re-encodes the result for display. This makes the light-mixing logic conceptually faithful to display colour science.',
+    interpretation: 'Equal RGB values produce a neutral axis because all three primaries contribute equally; unequal contributions shift the hue angle while total linear energy drives perceived lightness.',
+    standards: 'CTML focus: spatial contiguity and signalling. Scientific anchors: sRGB gamma handling, CIELAB readout, and channel-by-channel causal mapping.',
+    tags: ['ctml: contiguity', 'model: linear-light rgb', 'focus: cause and effect'],
+    limitation: 'This is an educational broadband-primary model, not a full spectral power distribution simulator. It is intended to reveal the logic of additive synthesis rather than calibrate a physical display.',
+    noteTone: 'warn',
+    technical: 'Technical boundary: the app treats the RGB primaries as idealised broadband channels and reports CIELAB values from the simulated display output. The educational gain lies in making gamma correction and luminance addition explicit and manipulable.',
+    question: 'Why is mixing encoded sRGB numbers directly less defensible than linear-light addition?',
+    answer: 'Because sRGB code values are perceptually encoded rather than radiometrically proportional. Adding encoded numbers distorts the physical relationship between channel energy and luminance.',
+    prompt: 'Hypothesis:\\nWhich change will alter lightness more strongly: raising all three channels together or raising only one channel?\\n\\nObservation:\\n\\nInterpretation:\\n\\nWhat did the CIELAB readout help you understand?'
+  },
+  {
+    objective: 'Explain subtractive synthesis as wavelength-selective absorption and show why combining C, M, and Y pigments does not yield an ideal, spectrally pure black.',
+    inquiry: 'Compare 100% single-ink settings with two-ink and three-ink combinations. Use the spectral absorption panel to explain why the transmitted light narrows as more pigments are added.',
+    variables: 'Independent variables: cyan, magenta, and yellow pigment percentages. Observables: resulting swatch, CIELAB values, spectral absorption graph, and the CMY-versus-K comparison panel.',
+    model: 'Each pigment is modelled as a broadband filter that attenuates different spectral bands. The transmitted-light product is converted to RGB for visual interpretation and then to CIELAB for numeric inspection.',
+    interpretation: 'The key learning point is additivity failure: three imperfect absorbers leave residual spectral leakage, so a composite CMY black remains less neutral and less deep than an ideal key black.',
+    standards: 'Pedagogical value: invisible absorption behaviour becomes visible in real time. Scientific anchor: reflective colour formation is explained through selective filtering rather than channel arithmetic alone.',
+    tags: ['focus: subtractive mixing', 'model: filter absorption', 'misconception: cmy is not perfect black'],
+    limitation: 'The model is a transmission-style heuristic and does not implement Kubelka-Munk reflectance physics or measured ink spectra. It teaches the principle of selective absorption, not press characterisation.',
+    noteTone: 'warn',
+    technical: 'Technical boundary: the spectral panel is intentionally simplified so learners can see which bands are attenuated by each process ink. This preserves conceptual clarity while openly disclosing that full spectrophotometric modelling is outside scope.',
+    question: 'Why does 100% C + 100% M + 100% Y still differ from an ideal 100% K patch?',
+    answer: 'Because real process inks are imperfect absorbers. Their combined leakage leaves a residual colour cast and higher lightness than a dedicated black ink designed to maximise neutral density.',
+    prompt: 'Hypothesis:\\nWhat should happen when you add yellow to a cyan + magenta mixture?\\n\\nObservation:\\n\\nInterpretation:\\n\\nHow does the spectrum graph support your conclusion?'
+  },
+  {
+    objective: 'Connect CMYK channel separation to halftone screening, rosette formation, and the stabilising role of the K plate in four-colour process printing.',
+    inquiry: 'Compare chromatic builds against versions that include K. Then inspect the individual channel screens and screen-angle labels to explain why the four plates can recombine without severe moire.',
+    variables: 'Independent variables: C, M, Y, K percentages. Observables: composite swatch, CIELAB coordinates, TAC, channel strips, and the four halftone screen visualisations.',
+    model: 'The channels are visualised as amplitude-modulated halftone grids positioned at conventional screen angles. Dot area grows with tone value so learners can link plate coverage to printed density.',
+    interpretation: 'Students should see that K improves shadow structure and grey stability while the angular offset among plates reduces repetitive interference patterns in the composite rosette.',
+    standards: 'Scientific anchor: AM screening with process-angle logic. Pedagogical anchor: one composite colour is decomposed into four simultaneously visible causal layers.',
+    tags: ['focus: cmyk separation', 'screening: am rosette', 'use: print reconstruction'],
+    limitation: 'The halftone geometry is schematic: dot shape, press gain, and stochastic screening are not modelled here. The panel is for reasoning about channel interaction, not predicting press artefacts exactly.',
+    noteTone: 'warn',
+    technical: 'Technical boundary: the screen-angle view intentionally privileges legibility over press-level fidelity. It makes channel independence and recombination explicit without pretending to be a RIP preview.',
+    question: 'Why is a dedicated K channel pedagogically important even when a dark tone could be built with CMY only?',
+    answer: 'Because K makes grey balance, text sharpness, and shadow control visible as distinct technical decisions instead of hiding them inside a three-ink mixture.',
+    prompt: 'Hypothesis:\\nHow will adding K change a dark neutral compared with adding equal CMY?\\n\\nObservation:\\n\\nInterpretation:\\n\\nWhat does the channel view reveal that the final swatch alone does not?'
+  },
+  {
+    objective: 'Relate Total Area Coverage (TAC) and substrate-specific ink limits to the physical risk of smearing, set-off, drying problems, and unstable shadow reproduction.',
+    inquiry: 'Push the CMYK values above and below the selected substrate limit. Watch the meter, the badge state, and the printed-result panel, then explain why a visually darker build may still be technically worse.',
+    variables: 'Independent variables: C, M, Y, K values and selected print condition. Observables: TAC percentage, proximity to the limit, warning badge state, and the simulated over-inking artefacts.',
+    model: 'The lab computes TAC directly as C + M + Y + K and compares it with a substrate limit. Visual artefacts act as teaching proxies for excessive wet ink on press.',
+    interpretation: 'The intended takeaway is that colour builds must be judged by process feasibility, not by screen appearance alone. A build can look rich on screen yet be mechanically unsafe on paper.',
+    standards: 'Scientific anchor: TAC / TIL reasoning under ISO-style process control. Pedagogical anchor: explicit threshold feedback reduces hidden process constraints and supports rapid what-if exploration.',
+    tags: ['focus: tac and til', 'standard: process control', 'decision: safe ink build'],
+    limitation: 'The smearing and drying artefacts are didactic proxies, not finite-element press models. They visualise why limits matter without claiming to reproduce a specific pressroom failure mode.',
+    noteTone: 'warn',
+    technical: 'Technical boundary: this module intentionally externalises a hidden prepress constraint. The precise threshold depends on press, substrate, screening, and profile; the educational gain lies in showing the consequence of violating it.',
+    question: 'Why can a TAC-heavy shadow be technically inferior even if it looks darker on screen?',
+    answer: 'Because higher total ink can exceed what the substrate or press can stabilise. Once drying, trapping, or set-off problems appear, the build becomes less controllable even if the screen preview initially looks richer.',
+    prompt: 'Hypothesis:\\nAt what TAC point do you expect process risk to become visible for the selected condition?\\n\\nObservation:\\n\\nInterpretation:\\n\\nWhat would you change in the CMYK build to remain printable?'
+  },
+  {
+    objective: 'Compare device gamuts and understand why a 2D chromaticity plot is informative but still incomplete for full perceptual volume comparisons.',
+    inquiry: 'Toggle different spaces on and off, then compare their xy polygons. Identify at least one region where a display space extends beyond the CMYK teaching gamut and one region where the projection hides lightness information.',
+    variables: 'Independent variables: selected colour spaces. Observables: polygon area on the CIE 1931 xy diagram, relative gamut percentages, white point marker, and overlaps among spaces.',
+    model: 'The app projects gamut outlines into xy chromaticity coordinates. This preserves chromatic relationships in two dimensions while deliberately omitting the third dimension of lightness and the hue-specific asymmetry of full L*a*b* volumes.',
+    interpretation: 'Learners should infer that gamut comparison is always model-dependent: xy plots clarify chromatic coverage, but they do not by themselves describe printable volume or tone-range behaviour.',
+    standards: 'Scientific anchor: CIE 1931 xy chromaticity representation. Pedagogical anchor: explicit disclosure that 2D visual convenience comes with information loss.',
+    tags: ['focus: gamut comparison', 'cie 1931 xy', 'limitation: 2d projection'],
+    limitation: 'This lab is intentionally transparent about its simplification. A 2D chromaticity diagram is excellent for teaching hue and saturation coverage, but it cannot replace full 3D CIELAB gamut analysis.',
+    noteTone: 'warn',
+    technical: 'Technical boundary: the app turns a common pedagogical shortcut into an explicit learning object. Instead of hiding the loss of dimensionality, it names that trade-off and uses it to discuss why industrial gamut tools are more complex.',
+    question: 'What important information is lost when a 3D gamut is projected into a 2D xy diagram?',
+    answer: 'Lightness structure and many hue-dependent boundary differences are lost. Two spaces can overlap strongly in xy yet differ meaningfully in printable volume across L*.',
+    prompt: 'Hypothesis:\\nWhich space should appear largest in chromaticity, and why?\\n\\nObservation:\\n\\nInterpretation:\\n\\nWhat does the xy view show well, and what does it hide?'
+  },
+  {
+    objective: 'Show how grey component replacement changes channel composition while preserving the intended colour appearance closely enough for instructional comparison.',
+    inquiry: 'Choose a medium-dark colour, then move the GCR slider from none to maximum. Compare the CMY-only and GCR builds and explain which part of the colour is being transferred to K.',
+    variables: 'Independent variables: RGB input and GCR level. Observables: input swatch, CMY-only build, GCR build, K contribution, and the bar comparison across preset GCR levels.',
+    model: 'The grey component is approximated as the minimum shared amount among the CMY channels. A chosen fraction of that shared component is transferred to K, leaving the chromatic remainder in CMY.',
+    interpretation: 'Students should learn that multiple CMYK builds can target a similar visual colour while differing substantially in ink economy, grey stability, and process robustness.',
+    standards: 'Scientific anchor: achromatic component management. Pedagogical anchor: same-colour / different-build comparison supports causal reasoning about separation strategy.',
+    tags: ['focus: gcr versus ucr', 'decision: black generation', 'same colour different build'],
+    limitation: 'This is a transparent teaching approximation, not a proprietary black-generation curve from a commercial CMM. Industrial systems use profile-specific strategies that vary by rendering intent and press condition.',
+    noteTone: 'warn',
+    technical: 'Technical boundary: by exposing the transfer rule directly, the lab favours inspectability over industrial sophistication. This makes black generation teachable rather than invisible.',
+    question: 'Why is it useful for students to see two different CMYK builds that aim at the same colour appearance?',
+    answer: 'Because it reveals that colour reproduction is not defined by one unique set of percentages. Separation strategy is a design and process-control decision, not a single inevitable output.',
+    prompt: 'Hypothesis:\\nWhat will increase first as GCR rises: K stability or colourfulness?\\n\\nObservation:\\n\\nInterpretation:\\n\\nHow does the bar comparison change your view of black generation?'
+  },
+  {
+    objective: 'Connect nominal file tone, apparent printed tone, and substrate-dependent TVI through a model that openly combines optical scattering and a small mechanical spread term.',
+    inquiry: 'Keep the same input tone and switch among coated, uncoated, and newsprint. Record how the apparent tone and TVI change, then explain which part of the difference is attributed to the substrate.',
+    variables: 'Independent variables: nominal tone value and substrate. Observables: apparent printed tone, TVI, relative tint density, Yule-Nielsen n factor, and the full curve over the 0 to 100 percent range.',
+    model: 'The lab uses a Murray-Davies / Yule-Nielsen-inspired reflectance model plus a small mechanical spread proxy. This keeps the logic inspectable while showing why the same digital tone prints differently on different stocks.',
+    interpretation: 'The important insight is that dot gain is not a single universal correction. It emerges from substrate-dependent optical scattering and process-dependent physical spreading, especially in the midtones.',
+    standards: 'Scientific anchor: TVI reasoning under process control. Pedagogical anchor: explicit decomposition of nominal tone, effective area, and apparent tone removes the usual black-box treatment of compensation curves.',
+    tags: ['focus: tvi', 'model: yule-nielsen inspired', 'warning: measured curves still matter'],
+    limitation: 'The module is intentionally presented as a teaching model. It should be used to explain the shape and ranking of TVI curves, not as a replacement for densitometric press calibration or certified characterisation data.',
+    noteTone: 'danger',
+    technical: 'Technical boundary: the current implementation is pedagogically calibrated rather than normatively certified. It openly discloses that real production control still depends on measured press curves, substrate data, and condition-specific standards.',
+    question: 'Why does the same 40% file tone not correspond to the same printed tone on all papers?',
+    answer: 'Because optical scatter and mechanical spreading differ by substrate and process condition. More light spread and dot growth make the printed patch behave as if it had a larger area coverage.',
+    prompt: 'Hypothesis:\\nWhich substrate will show the strongest TVI at the same nominal tone, and why?\\n\\nObservation:\\n\\nInterpretation:\\n\\nHow would you explain the difference to a student seeing dot gain for the first time?'
+  },
+  {
+    objective: 'Compare the logic of the four ICC rendering intents and show how hue-preserving chroma compression differs from clipping or paper-white simulation.',
+    inquiry: 'Pick an out-of-gamut colour, switch among the four intents, and toggle black point compensation for deep shadows. Record which attributes stay stable and which are deliberately changed by each strategy.',
+    variables: 'Independent variables: RGB input, rendering intent, and BPC state. Observables: output swatches, Delta E differences, in-gamut / out-of-gamut status, and the comparative intent panel.',
+    model: 'The teaching engine estimates a printable gamut boundary in CIELAB with a continuous lightness-dependent chroma envelope and then applies heuristic mappings for each intent. Out-of-gamut colours are compressed or clipped depending on the chosen strategy.',
+    interpretation: 'Students should notice that rendering intent is a decision about priorities: preserving relationships, preserving in-gamut exactness, simulating substrate white, or maximising business-graphic saturation.',
+    standards: 'Scientific anchor: CIELAB, Delta E00, black point compensation, and intent-dependent mapping logic. Pedagogical anchor: all alternatives are visible at once to reduce split attention.',
+    tags: ['focus: rendering intents', 'model: hue-preserving compression', 'ctml: side-by-side comparison'],
+    limitation: 'The printable boundary is a heuristic envelope rather than a measured ICC LUT. The purpose is to reveal the logic of mapping decisions, not to reproduce a commercial engine pixel for pixel.',
+    noteTone: 'warn',
+    technical: 'Technical boundary: the boundary model deliberately sacrifices hue-specific precision so that learners can inspect and reason about the mapping rule itself. This supports transparent discussion of colour-management modelling.',
+    question: 'Why is perceptual mapping often preferred for highly saturated photographic colours?',
+    answer: 'Because it compresses colour relationships more gracefully across the image instead of clipping only the most saturated points. That usually preserves a more coherent perceptual impression even when absolute values change.',
+    prompt: 'Hypothesis:\\nFor an extreme out-of-gamut colour, which intent will preserve the most saturation and which will preserve the most exactness?\\n\\nObservation:\\n\\nInterpretation:\\n\\nWhat role did BPC play in dark colours?'
+  },
+  {
+    objective: 'Use Delta E00 and profile-dependent print simulation to understand proofing logic while keeping the distinction clear between educational simulation and certified contract proof verification.',
+    inquiry: 'Choose a colour, compare its screen appearance with the selected print simulation, then change profile and note how Delta E00 and the tolerance proxy react. Explain what the metric does and does not certify.',
+    variables: 'Independent variables: input colour and target press profile. Observables: screen versus print swatches, Delta E00, tolerance-proxy badge, profile comparison row, and readout values.',
+    model: 'The lab computes a heuristic press simulation and then evaluates the colour difference with CIEDE2000. The badge is intentionally framed as a teaching proxy for ISO-style tolerance reasoning rather than a full compliance check.',
+    interpretation: 'Learners should grasp that proofing is not just visual judgement. It is a structured comparison involving target condition, colour difference metrics, and explicit tolerance decisions.',
+    standards: 'Scientific anchor: CIEDE2000 and ISO-style proofing logic. Pedagogical anchor: the app makes metric interpretation visible while naming the limits of uncalibrated, single-patch simulation.',
+    tags: ['focus: soft proofing', 'metric: delta e00', 'warning: not certified proof'],
+    limitation: 'This lab must never be read as a contract-proof certifier. It is a single-patch educational simulation viewed on an uncalibrated display, useful for conceptual understanding but insufficient for production approval.',
+    noteTone: 'danger',
+    technical: 'Technical boundary: the platform teaches the mathematics and decision logic of proofing, but spectrophotometric measurement and calibrated viewing conditions remain mandatory for actual ISO 12647-7 compliance.',
+    question: 'Why is a Delta E threshold helpful but still insufficient for real proof certification?',
+    answer: 'Because certification depends on calibrated devices, measurement conditions, patch sets, and standardised viewing. A numeric threshold helps interpret difference, but it does not replace the full proofing workflow.',
+    prompt: 'Hypothesis:\\nWill the chosen colour stay within the teaching tolerance proxy for all press profiles?\\n\\nObservation:\\n\\nInterpretation:\\n\\nWhat extra steps would be required in a real certified proofing workflow?'
+  }
+];
+
+function companionCard(label, text) {
+  return '<div class="companion-card"><div class="companion-label">' + label + '</div><p>' + text + '</p></div>';
+}
+
+function buildCompanionHtml(meta, idx) {
+  const tags = meta.tags.map(function(tag) {
+    return '<span class="companion-tag">' + tag + '</span>';
+  }).join('');
+  return '' +
+    '<div class="pane companion-pane">' +
+      '<div class="pane-title"><span style="background:var(--Y)"></span>Scientific &amp; Pedagogical Companion</div>' +
+      '<div class="companion-grid">' +
+        companionCard('Learning objective', meta.objective) +
+        companionCard('Inquiry task', meta.inquiry) +
+        companionCard('Variables and indicators', meta.variables) +
+        companionCard('Scientific model', meta.model) +
+        companionCard('Interpretation', meta.interpretation) +
+        companionCard('Evidence and standards', meta.standards) +
+      '</div>' +
+      '<div class="companion-tags">' + tags + '</div>' +
+      '<div class="companion-note ' + meta.noteTone + '">' +
+        '<div class="companion-label">Transparency note</div>' +
+        '<p>' + meta.limitation + '</p>' +
+      '</div>' +
+      '<details class="companion-details">' +
+        '<summary>Technical notes and model boundaries</summary>' +
+        '<div class="details-body"><p>' + meta.technical + '</p></div>' +
+      '</details>' +
+      '<details class="companion-details">' +
+        '<summary>Self-check and model answer</summary>' +
+        '<div class="details-body">' +
+          '<p><b>Check:</b> ' + meta.question + '</p>' +
+          '<p><b>Model answer:</b> ' + meta.answer + '</p>' +
+        '</div>' +
+      '</details>' +
+      '<div class="companion-notebook">' +
+        '<label class="companion-label" for="labNote' + idx + '">Observation log</label>' +
+        '<textarea id="labNote' + idx + '" placeholder="Capture a hypothesis, one observation, and your interpretation."></textarea>' +
+        '<div class="companion-actions">' +
+          '<button class="companion-btn" onclick="insertLabTemplate(' + idx + ')">Insert note template</button>' +
+          '<button class="companion-btn secondary" onclick="clearLabNote(' + idx + ')">Clear note</button>' +
+          '<button class="companion-btn secondary" onclick="downloadNotebook()">Export notes</button>' +
+        '</div>' +
+        '<div class="companion-foot">Local only. Notes are stored in this browser via localStorage until exported or cleared.</div>' +
+      '</div>' +
+    '</div>';
+}
+
+function noteStorageKey(idx) {
+  return 'prepress-colour-labs-note-' + idx;
+}
+
+function persistLabNote(idx) {
+  const ta = document.getElementById('labNote' + idx);
+  if (!ta) return;
+  try {
+    localStorage.setItem(noteStorageKey(idx), ta.value);
+  } catch (err) {}
+}
+
+function insertLabTemplate(idx) {
+  const ta = document.getElementById('labNote' + idx);
+  const meta = labCompanions[idx];
+  if (!ta || !meta) return;
+  const prefix = ta.value.trim() ? ta.value.replace(/\\s+$/, '') + '\\n\\n' : '';
+  ta.value = prefix + meta.prompt;
+  persistLabNote(idx);
+  ta.focus();
+}
+
+function clearLabNote(idx) {
+  const ta = document.getElementById('labNote' + idx);
+  if (!ta) return;
+  ta.value = '';
+  persistLabNote(idx);
+}
+
+function downloadNotebook() {
+  const sections = labCompanions.map(function(meta, idx) {
+    const ta = document.getElementById('labNote' + idx);
+    const val = ta ? ta.value.trim() : '';
+    if (!val) return '';
+    return 'Laboratory ' + String(idx + 1).padStart(2, '0') + '\\n' +
+      'Prompt focus: ' + meta.objective + '\\n\\n' +
+      val + '\\n';
+  }).filter(Boolean);
+  if (!sections.length) return;
+
+  const text = 'Prepress Colour — Guided Inquiry Notes\\n' +
+    'Generated: ' + new Date().toLocaleString() + '\\n\\n' +
+    sections.join('\\n------------------------------\\n\\n');
+
+  const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'guided-inquiry-notes.txt';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+function injectLearningCompanions() {
+  document.querySelectorAll('.lab').forEach(function(lab, idx) {
+    if (lab.querySelector('.companion-pane')) return;
+    const header = lab.querySelector('.lab-header');
+    if (!header || !labCompanions[idx]) return;
+    header.insertAdjacentHTML('afterend', buildCompanionHtml(labCompanions[idx], idx));
+  });
+
+  labCompanions.forEach(function(meta, idx) {
+    const ta = document.getElementById('labNote' + idx);
+    if (!ta) return;
+    try {
+      ta.value = localStorage.getItem(noteStorageKey(idx)) || '';
+    } catch (err) {
+      ta.value = '';
+    }
+    ta.addEventListener('input', function() { persistLabNote(idx); });
+  });
+}
+
+// ══════════════════════════════════════════
+// LAB 0: RGB
+// ══════════════════════════════════════════
+function setRGB(r,g,b){
+  document.getElementById('rgbR').value=r;
+  document.getElementById('rgbG').value=g;
+  document.getElementById('rgbB').value=b;
+  updateRGB();
+}
+function updateRGB() {
+  const r = +document.getElementById('rgbR').value;
+  const g = +document.getElementById('rgbG').value;
+  const b = +document.getElementById('rgbB').value;
+  document.getElementById('vR').textContent = r;
+  document.getElementById('vG').textContent = g;
+  document.getElementById('vB').textContent = b;
+  const hex = hexColor(r, g, b);
+  document.getElementById('rgbSwatch').style.background = hex;
+  
+  const lab = rgbToLab(r, g, b);
+  const L = lab[0];
+  const a = lab[1];
+  const bv = lab[2];
+  const C_val = Math.sqrt(a*a + bv*bv);
+  let h_val = Math.atan2(bv, a) * (180/Math.PI);
+  if (h_val < 0) h_val += 360;
+
+  document.getElementById('rgbReadout').innerHTML =
+    '<span class="tag">RGB</span><b>rgb(' + r + ', ' + g + ', ' + b + ')</b><br>' +
+    '<span class="tag">HEX</span><b>' + hex.toUpperCase() + '</b><br>' +
+    '<span class="tag">CIE L*a*b* &middot; L*C*h&deg;</span><b>L*=' + L.toFixed(1) + ' a*=' + a.toFixed(1) + ' b*=' + bv.toFixed(1) + ' &nbsp;&bull;&nbsp; C=' + C_val.toFixed(1) + ' h=' + h_val.toFixed(1) + '&deg;</b>';
+
+  const strips = document.getElementById('rgbChannelStrips');
+  let stripsHtml = '';
+  const rgbArr = [r, g, b];
+  const colArr = ['#ff4520','#00ff88','#4466ff'];
+  const chArr = ['R','G','B'];
+  for(let i=0; i<3; i++){
+    const val = rgbArr[i];
+    const col = colArr[i];
+    const ch = chArr[i];
+    const pct = (val / 255 * 100).toFixed(1);
+    stripsHtml += '<div class="channel-strip" style="border-color:' + col + '22"><div class="ch-name" style="color:' + col + '">' + ch + '</div><div class="ch-bar-wrap"><div class="ch-bar" style="width:' + pct + '%;background:' + col + '"></div></div><div class="ch-pct">' + val + '</div></div>';
+  }
+  strips.innerHTML = stripsHtml;
+
+  const canvas = document.getElementById('rgbMixCanvas');
+  if (!canvas) return;
+  const cw = canvas.width;
+  const ch = canvas.height;
+  const cx = canvas.getContext('2d');
+  cx.clearRect(0, 0, cw, ch);
+  cx.fillStyle = '#060810';
+  cx.fillRect(0, 0, cw, ch);
+
+  const circleR = Math.min(cw, ch) * 0.285;
+  const offset = circleR * 0.58;
+  const cx_R = cw * 0.50 - offset * 0.9;
+  const cy_R = ch * 0.50 - offset * 0.62;
+  const cx_G = cw * 0.50 + offset * 0.9;
+  const cy_G = ch * 0.50 - offset * 0.62;
+  const cx_B = cw * 0.50;
+  const cy_B = ch * 0.50 + offset * 0.76;
+  const edge = circleR * 0.08; 
+
+  const lr = srgbToLin(r/255);
+  const lg = srgbToLin(g/255);
+  const lb = srgbToLin(b/255);
+
+  const idata = cx.createImageData(cw, ch);
+  const d = idata.data;
+  for (let py = 0; py < ch; py++) {
+    for (let px = 0; px < cw; px++) {
+      const dR = Math.hypot(px - cx_R, py - cy_R);
+      const dG = Math.hypot(px - cx_G, py - cy_G);
+      const dB = Math.hypot(px - cx_B, py - cy_B);
+      const aR = clamp((circleR - dR) / edge, 0, 1);
+      const aG = clamp((circleR - dG) / edge, 0, 1);
+      const aB = clamp((circleR - dB) / edge, 0, 1);
+      if (aR === 0 && aG === 0 && aB === 0) continue;
+
+      let fLr = 0, fLg = 0, fLb = 0;
+      if (aR > 0) fLr += aR * lr;
+      if (aG > 0) fLg += aG * lg;
+      if (aB > 0) fLb += aB * lb;
+      
+      const idx = (py * cw + px) * 4;
+      d[idx]   = Math.min(255, Math.max(0, Math.round(linToSrgb(fLr) * 255)));
+      d[idx+1] = Math.min(255, Math.max(0, Math.round(linToSrgb(fLg) * 255)));
+      d[idx+2] = Math.min(255, Math.max(0, Math.round(linToSrgb(fLb) * 255)));
+      d[idx+3] = 255;
+    }
+  }
+  cx.putImageData(idata, 0, 0);
+
+function labelPill(ctx, text, x, y, textCol, fontSize) {
+    ctx.save();
+    ctx.font = (fontSize || 20) + 'px DM Mono, monospace';
+    ctx.textAlign = 'center';
+    const tw = ctx.measureText(text).width;
+    const ph2 = (fontSize || 20) * 0.8;
+    const pw2 = tw / 2 + 12;
+    ctx.fillStyle = 'rgba(4,6,12,0.78)';
+    ctx.beginPath();
+    ctx.roundRect(x - pw2, y - ph2 - 2, pw2 * 2, ph2 * 2 + 4, 8);
+    ctx.fill();
+    ctx.fillStyle = textCol || '#fff';
+    ctx.fillText(text, x, y + ph2 * 0.45);
+    ctx.restore();
+  }
+
+  cx.font = 'bold 30px DM Mono, monospace';
+  cx.textAlign = 'center';
+  labelPill(cx, 'R', cx_R - circleR * 0.55, cy_R - circleR * 0.72, 'rgb(' + Math.max(r,200) + ',100,100)', 26);
+  labelPill(cx, 'G', cx_G + circleR * 0.55, cy_G - circleR * 0.72, 'rgb(100,' + Math.max(g,200) + ',100)', 26);
+  labelPill(cx, 'B', cx_B,                  cy_B + circleR * 0.88, 'rgb(100,100,' + Math.max(b,200) + ')', 26);
+
+  cx.globalAlpha = 0.92;
+  labelPill(cx, 'R+G', (cx_R+cx_G)/2, cy_R - circleR*0.38, hexColor(Math.max(r,200), Math.max(g,200), 0), 18);
+  labelPill(cx, 'R+B', cx_R - circleR*0.12, (cy_R+cy_B)/2 + circleR*0.22, hexColor(Math.max(r,200), 0, Math.max(b,200)), 18);
+  labelPill(cx, 'G+B', cx_G + circleR*0.12, (cy_G+cy_B)/2 + circleR*0.22, hexColor(0, Math.max(g,200), Math.max(b,200)), 18);
+
+  const cxCtr = (cx_R+cx_G+cx_B)/3;
+  const cyCtr = (cy_R+cy_G+cy_B)/3 + 12;
+  cx.globalAlpha = 1;
+  labelPill(cx, 'R+G+B', cxCtr, cyCtr - 14, '#ffffff', 18);
+  labelPill(cx, hex.toUpperCase(), cxCtr, cyCtr + 16, hexColor(r,g,b), 18);
+}
+
+// ══════════════════════════════════════════
+// LAB 1: CMY
+// ══════════════════════════════════════════
+function setCMY(c, m, y) {
+  document.getElementById('cmyC').value = c;
+  document.getElementById('cmyM').value = m;
+  document.getElementById('cmyY').value = y;
+  updateCMY();
+}
+function updateCMY() {
+  const c = +document.getElementById('cmyC').value;
+  const m = +document.getElementById('cmyM').value;
+  const y = +document.getElementById('cmyY').value;
+  document.getElementById('vCC').textContent = c + '%';
+  document.getElementById('vCM').textContent = m + '%';
+  document.getElementById('vCY').textContent = y + '%';
+
+  const cf = c / 100;
+  const mf = m / 100;
+  const yf = y / 100;
+  const tR = (1-(1-0.03)*cf) * (1-(1-0.70)*mf) * (1-(1-0.90)*yf);
+  const tG = (1-(1-0.78)*cf) * (1-(1-0.04)*mf) * (1-(1-0.88)*yf);
+  const tB = (1-(1-0.68)*cf) * (1-(1-0.62)*mf) * (1-(1-0.03)*yf);
+
+  const r = Math.round(clamp(tR * 255, 0, 255));
+  const g = Math.round(clamp(tG * 255, 0, 255));
+  const b = Math.round(clamp(tB * 255, 0, 255));
+  const hex = hexColor(r, g, b);
+  document.getElementById('cmySwatch').style.background = hex;
+
+  const lab = rgbToLab(r, g, b);
+  const L = lab[0];
+  const a = lab[1];
+  const bv = lab[2];
+  const C_val = Math.sqrt(a*a + bv*bv);
+  let h_val = Math.atan2(bv, a) * (180/Math.PI);
+  if (h_val < 0) h_val += 360;
+
+  const L_col = L < 10 ? '#ff2d78' : '#aab4cc';
+
+  document.getElementById('cmyReadout').innerHTML =
+    '<span class="tag">CMY Pigments</span><b style="color:#00e5ff">C=' + c + '%</b> &middot; <b style="color:#ff2d78">M=' + m + '%</b> &middot; <b style="color:#ffe500">Y=' + y + '%</b><br>' +
+    '<span class="tag">Reflected (Realistic Model)</span><b>rgb(' + r + ',' + g + ',' + b + ') ' + hex.toUpperCase() + '</b><br>' +
+    '<span class="tag">CIE L*a*b* &middot; L*C*h&deg;</span><b style="color:' + L_col + '">L*=' + L.toFixed(1) + '</b> <b>a*=' + a.toFixed(1) + ' b*=' + bv.toFixed(1) + ' &nbsp;&bull;&nbsp; C=' + C_val.toFixed(1) + ' h=' + h_val.toFixed(1) + '&deg;</b>';
+
+  document.getElementById('cmyImpure').style.background = hex;
+  document.getElementById('cmyImpure').style.color = 'rgba(255,255,255,0.25)';
+
+  const de = deltaE(r, g, b, 0, 0, 0);
+  const rAmp = Math.min(255, r * 6);
+  const gAmp = Math.min(255, g * 6);
+  const bAmp = Math.min(255, b * 6);
+
+  let note = '';
+  if (c === 100 && m === 100 && y === 100) {
+    note = '<div style="margin-top:8px;font-size:11px;font-family:\'DM Mono\',monospace;color:var(--dim)">' +
+      '<div style="display:flex;gap:6px;align-items:center;margin-bottom:6px"><div style="width:32px;height:32px;border-radius:4px;background:' + hex + ';border:1px solid #333;flex-shrink:0"></div><div style="width:32px;height:32px;border-radius:4px;background:' + hexColor(rAmp,gAmp,bAmp) + ';border:1px solid #333;flex-shrink:0"></div><div style="width:32px;height:32px;border-radius:4px;background:#000;border:1px solid #333;flex-shrink:0"></div><span style="font-size:10px;color:#5a6380">Result &middot; &times;6 brightness (reveals hue) &middot; Pure Black K</span></div>' +
+      'CMY&rarr;<b>rgb(' + r + ',' + g + ',' + b + ')</b> L*=<b style="color:#ff2d78">' + L.toFixed(1) + '</b> &middot; &Delta;E2000 vs Black: <b style="color:#ff2d78">' + de.toFixed(1) + '</b><br>' +
+      '<span style="color:#ff2d78">&#9888; Muddy dark brown &mdash; NOT pure black!</span><br>This is why <b style="color:#aab4cc">K (Key Black)</b> is added in printing.' +
+    '</div>';
+  } else if (c > 0 || m > 0 || y > 0) {
+    note = '<div style="margin-top:6px;font-size:11px;font-family:\'DM Mono\',monospace;color:var(--dim)">rgb(' + r + ',' + g + ',' + b + ') &middot; L*=' + L.toFixed(1) + ' &middot; &Delta;E2000 vs Black: ' + de.toFixed(1) + '</div>';
+  }
+  document.getElementById('cmyImpureNote').innerHTML = note;
+
+  const canvas = document.getElementById('cmyCanvas');
+  if(!canvas) return;
+  const {cx, cw, ch} = prepCanvas(canvas);
+  cx.clearRect(0, 0, cw, ch);
+  cx.fillStyle = '#13161d';
+  cx.fillRect(0, 0, cw, ch);
+
+  const margin = { l: 40, r: 20, t: 30, b: 40 };
+  const pw = cw - margin.l - margin.r;
+  const ph = ch - margin.t - margin.b;
+
+  cx.strokeStyle = '#232840';
+  cx.lineWidth = 1;
+  cx.beginPath();
+  cx.moveTo(margin.l, margin.t);
+  cx.lineTo(margin.l, margin.t + ph);
+  cx.lineTo(margin.l + pw, margin.t + ph);
+  cx.stroke();
+
+  const values = [0, 25, 50, 75, 100];
+  for(let i=0; i<values.length; i++) {
+    let v = values[i];
+    const y_pos = margin.t + ph * (1 - v / 100);
+    cx.strokeStyle = '#1e2235';
+    cx.beginPath();
+    cx.moveTo(margin.l, y_pos);
+    cx.lineTo(margin.l + pw, y_pos);
+    cx.stroke();
+    cx.fillStyle = '#8a96b0';
+    cx.font = '9px DM Mono, monospace';
+    cx.textAlign = 'right';
+    cx.fillText(v + '%', margin.l - 4, y_pos + 3);
+  }
+
+  const specGrad = cx.createLinearGradient(margin.l, 0, margin.l + pw, 0);
+  specGrad.addColorStop(0,'#7b00ff');
+  specGrad.addColorStop(.15,'#0000ff');
+  specGrad.addColorStop(.3,'#00cfff');
+  specGrad.addColorStop(.45,'#00ff44');
+  specGrad.addColorStop(.55,'#ffff00');
+  specGrad.addColorStop(.65,'#ff8800');
+  specGrad.addColorStop(.75,'#ff0000');
+  specGrad.addColorStop(1,'#7b0000');
+  cx.fillStyle = specGrad;
+  cx.fillRect(margin.l, margin.t + ph - 8, pw, 8);
+
+  const channels = [
+    { label: 'C (absorbs Red ~620-700nm)', val: c, xStart: 0.7, xEnd: 1.0, col: '#00e5ff' },
+    { label: 'M (absorbs Green ~500-590nm)', val: m, xStart: 0.38, xEnd: 0.68, col: '#ff2d78' },
+    { label: 'Y (absorbs Blue ~400-490nm)', val: y, xStart: 0.0, xEnd: 0.3, col: '#ffe500' }
+  ];
+  
+  for(let i=0; i<channels.length; i++) {
+    let ch_data = channels[i];
+    cx.strokeStyle = ch_data.col;
+    cx.lineWidth = 2;
+    cx.setLineDash([]);
+    cx.globalAlpha = 0.85;
+    const x1 = margin.l + ch_data.xStart * pw;
+    const x2 = margin.l + ch_data.xEnd * pw;
+    const absY = margin.t + ph * (1 - ch_data.val / 100);
+    
+    cx.fillStyle = ch_data.col + '22';
+    cx.beginPath();
+    cx.moveTo(x1, margin.t + ph);
+    cx.lineTo(x1, absY);
+    cx.lineTo(x2, absY);
+    cx.lineTo(x2, margin.t + ph);
+    cx.closePath();
+    cx.fill();
+    cx.strokeStyle = ch_data.col;
+    cx.lineWidth = 1.5;
+    cx.beginPath();
+    cx.moveTo(x1, absY);
+    cx.lineTo(x2, absY);
+    cx.stroke();
+    cx.fillStyle = ch_data.col;
+    cx.font = '10px DM Mono, monospace';
+    cx.textAlign = 'left';
+    cx.globalAlpha = 1;
+    cx.fillText(ch_data.label, x1 + 4, absY - 5);
+  }
+  
+  cx.globalAlpha = 1;
+  const nms = ['380', '450', '520', '570', '620', '700', '780'];
+  for(let i=0; i<nms.length; i++) {
+    const x_pos = margin.l + (i / 6) * pw;
+    cx.fillStyle = '#8a96b0';
+    cx.font = '9px DM Mono, monospace';
+    cx.textAlign = 'center';
+    cx.fillText(nms[i] + 'nm', x_pos, margin.t + ph + 14);
+  }
+}
+
+// ══════════════════════════════════════════
+// LAB 2: CMYK CHANNELS
+// ══════════════════════════════════════════
+function setCMYK(c, m, y, k) {
+  document.getElementById('ck_C').value = c;
+  document.getElementById('ck_M').value = m;
+  document.getElementById('ck_Y').value = y;
+  document.getElementById('ck_K').value = k;
+  updateCMYK();
+}
+function updateCMYK() {
+  const c = +document.getElementById('ck_C').value;
+  const m = +document.getElementById('ck_M').value;
+  const y = +document.getElementById('ck_Y').value;
+  const k = +document.getElementById('ck_K').value;
+  document.getElementById('vc_C').textContent = c + '%';
+  document.getElementById('vc_M').textContent = m + '%';
+  document.getElementById('vc_Y').textContent = y + '%';
+  document.getElementById('vc_K').textContent = k + '%';
+  
+  const rgbArr = cmykToRgb(c, m, y, k);
+  const r = rgbArr[0];
+  const g = rgbArr[1];
+  const b = rgbArr[2];
+  const hex = hexColor(r, g, b);
+  document.getElementById('cmykSwatch').style.background = hex;
+  
+  const lab = rgbToLab(r, g, b);
+  const L = lab[0];
+  const a = lab[1];
+  const bv = lab[2];
+  const tac = c + m + y + k;
+  
+  const tacCol = tac > 330 ? '#ff2d78' : (tac > 300 ? '#ffe500' : '#00ff88');
+
+  document.getElementById('cmykReadout').innerHTML =
+    '<span class="tag">CMYK</span><b>C' + c + ' M' + m + ' Y' + y + ' K' + k + '</b><br>' +
+    '<span class="tag">&approx; RGB (sRGB approx)</span><b>' + hex.toUpperCase() + '</b><br>' +
+    '<span class="tag">L*a*b*</span><b>L*=' + L.toFixed(1) + ' a*=' + a.toFixed(1) + ' b*=' + bv.toFixed(1) + '</b><br>' +
+    '<span class="tag">TAC</span><b style="color:' + tacCol + '">' + tac + '%</b>';
+
+  const canvas = document.getElementById('cmykChanCanvas');
+  if(!canvas) return;
+  const {cx, cw, ch: ch2} = prepCanvas(canvas);
+  cx.clearRect(0, 0, cw, ch2);
+  cx.fillStyle = '#13161d';
+  cx.fillRect(0, 0, cw, ch2);
+
+  const cols = [
+    { name: 'C', val: c, color: '#00e5ff', bg: '#001a20', angle: 15 },
+    { name: 'M', val: m, color: '#ff2d78', bg: '#200010', angle: 75 },
+    { name: 'Y', val: y, color: '#ffe500', bg: '#201800', angle: 0 },
+    { name: 'K', val: k, color: '#aab4cc', bg: '#0e0e14', angle: 45 },
+    { name: 'RESULT', val: -1, color: '#ffffff', bg: null, angle: 0 }
+  ];
+  
+  const cellW = cw / 5;
+  const pad = 10;
+  const swH = 80;
+  const swTop = 40;
+
+  for(let i=0; i<cols.length; i++) {
+    let col = cols[i];
+    const x = i * cellW;
+    cx.fillStyle = col.color;
+    cx.font = 'bold 11px DM Mono, monospace';
+    cx.textAlign = 'center';
+    let angleText = i < 4 ? ' (' + col.angle + '\u00B0)' : '';
+    cx.fillText(col.name + angleText, x + cellW / 2, 22);
+
+    if (col.val === -1) {
+      cx.save();
+      cx.beginPath();
+      cx.roundRect(x + pad, swTop, cellW - pad * 2, swH, 6);
+      cx.clip();
+      cx.fillStyle = '#ffffff';
+      cx.fillRect(x, swTop, cellW, swH);
+      cx.globalCompositeOperation = 'multiply';
+      for(let j=0; j<4; j++) {
+        let cj = cols[j];
+        if(cj.val === 0) continue;
+        cx.save();
+        cx.translate(x + cellW/2, swTop + swH/2);
+        cx.rotate(cj.angle * (Math.PI / 180));
+        const dotSpacing = 8;
+        const maxDotR = 3.8;
+        const dotR = maxDotR * Math.sqrt(cj.val / 100);
+        const span = Math.max(cellW, swH) * 1.5;
+        cx.fillStyle = cj.color;
+        cx.globalAlpha = 0.85;
+        for (let dy = -span; dy < span; dy += dotSpacing) {
+          for (let dx = -span; dx < span; dx += dotSpacing) {
+            cx.beginPath(); cx.arc(dx, dy, dotR, 0, Math.PI * 2); cx.fill();
+          }
+        }
+        cx.restore();
+      }
+      cx.restore();
+      cx.strokeStyle = '#232840'; cx.lineWidth = 1;
+      cx.beginPath(); cx.roundRect(x + pad, swTop, cellW - pad * 2, swH, 6); cx.stroke();
+      
+      cx.fillStyle = '#fff';
+      cx.font = '9px DM Mono, monospace';
+      cx.fillText('ROSETTE', x + cellW / 2, swTop + swH + 16);
+    } else {
+      cx.save();
+      cx.beginPath();
+      cx.roundRect(x + pad, swTop, cellW - pad * 2, swH, 6);
+      cx.clip();
+      cx.fillStyle = col.bg;
+      cx.fillRect(x, swTop, cellW, swH);
+      
+      const angleRad = col.angle * (Math.PI / 180);
+      cx.translate(x + cellW/2, swTop + swH/2);
+      cx.rotate(angleRad);
+      
+      const dotSpacing = 8;
+      const maxDotR = 3.8;
+      const dotR = maxDotR * Math.sqrt(col.val / 100); // Scientific area coverage
+      const span = Math.max(cellW, swH) * 1.5;
+      
+      cx.fillStyle = col.color;
+      cx.globalAlpha = 0.85;
+      for (let dy = -span; dy < span; dy += dotSpacing) {
+        for (let dx = -span; dx < span; dx += dotSpacing) {
+          cx.beginPath();
+          cx.arc(dx, dy, dotR, 0, Math.PI * 2);
+          cx.fill();
+        }
+      }
+      cx.restore();
+      cx.globalAlpha = 1;
+      cx.fillStyle = col.color;
+      cx.font = '10px DM Mono, monospace';
+      cx.textAlign = 'center';
+      cx.fillText(col.val + '%', x + cellW / 2, swTop + swH + 16);
+    }
+    
+    if (i < 4) {
+      cx.strokeStyle = '#1e2235';
+      cx.lineWidth = 1;
+      cx.beginPath();
+      cx.moveTo(x + cellW, swTop - 10);
+      cx.lineTo(x + cellW, swTop + swH + 24);
+      cx.stroke();
+    }
+    if (i < 3) {
+      cx.fillStyle = '#3a4060';
+      cx.font = '16px DM Sans';
+      cx.textAlign = 'center';
+      cx.fillText('+', x + cellW + 1, swTop + swH/2 + 5);
+    }
+    if (i === 3) {
+      cx.fillStyle = '#3a4060';
+      cx.font = '16px DM Sans';
+      cx.textAlign = 'center';
+      cx.fillText('=', x + cellW + 1, swTop + swH/2 + 5);
+    }
+  }
+
+  const barTop = swTop + swH + 40;
+  const barH = ch2 - barTop - 30;
+  for(let i=0; i<4; i++) {
+    let col = cols[i];
+    const x = i * cellW + pad;
+    const bh = barH * (col.val / 100);
+    const by = barTop + barH - bh;
+    cx.fillStyle = col.color + '30';
+    cx.beginPath();
+    cx.roundRect(x + cellW * i, barTop, cellW - pad*2, barH, 4);
+    cx.fill();
+    cx.fillStyle = col.color + '90';
+    cx.beginPath();
+    cx.roundRect(x + cellW * i, by, cellW - pad*2, bh, 4);
+    cx.fill();
+  }
+}
+
+// ══════════════════════════════════════════
+// LAB 3: TAC
+// ══════════════════════════════════════════
+function updateTAC() {
+  const c = +document.getElementById('tac_C').value;
+  const m = +document.getElementById('tac_M').value;
+  const y = +document.getElementById('tac_Y').value;
+  const k = +document.getElementById('tac_K').value;
+  document.getElementById('tv_C').textContent = c + '%';
+  document.getElementById('tv_M').textContent = m + '%';
+  document.getElementById('tv_Y').textContent = y + '%';
+  document.getElementById('tv_K').textContent = k + '%';
+  
+  const limit = +document.getElementById('tacProfile').value;
+  const tac = c + m + y + k;
+  const pct = Math.min(tac / 400 * 100, 100);
+  const over = tac > limit;
+  const nearLimit = tac > limit * 0.9 && !over;
+  
+  document.getElementById('tacFill').style.width = pct + '%';
+  document.getElementById('tacFill').style.background = over ? '#ff2d78' : (nearLimit ? '#ffe500' : 'linear-gradient(90deg,#00e5ff,#00ff88)');
+  
+  const tacCol = over ? '#ff2d78' : (nearLimit ? '#ffe500' : '#00ff88');
+  document.getElementById('tacVal').innerHTML = '<span style="color:' + tacCol + '">' + tac + '%</span> <span style="color:#5a6380;font-size:13px">/ limit: ' + limit + '%</span>';
+  
+  const badge = document.getElementById('tacBadge');
+  if (over) {
+    badge.innerHTML = '<span class="score-badge score-err">&#10007; TAC exceeded by ' + (tac - limit) + '%</span>';
+  } else if (nearLimit) {
+    badge.innerHTML = '<span class="score-badge score-warn">&#9888; Near limit (' + (limit - tac) + '% margin)</span>';
+  } else {
+    badge.innerHTML = '<span class="score-badge score-ok">&#10003; Within limits (' + (limit - tac) + '% margin)</span>';
+  }
+
+  const canvas = document.getElementById('tacCanvas');
+  if(!canvas) return;
+  const {cx, cw, ch} = prepCanvas(canvas);
+  cx.clearRect(0, 0, cw, ch);
+  cx.fillStyle = '#13161d';
+  cx.fillRect(0, 0, cw, ch);
+
+  const rgbArr = cmykToRgb(c, m, y, k);
+  const r = rgbArr[0];
+  const g = rgbArr[1];
+  const b = rgbArr[2];
+  const sqSize = 120;
+  
+  cx.fillStyle = hexColor(r, g, b);
+  cx.beginPath();
+  cx.roundRect(20, 20, sqSize, sqSize, 8);
+  cx.fill();
+  cx.fillStyle = '#aab4cc';
+  cx.font = '10px DM Mono';
+  cx.textAlign = 'center';
+  cx.fillText('Ideal Color', 20 + sqSize/2, 20 + sqSize + 16);
+
+  if (over) {
+    const blurAmount = Math.min((tac - limit) / 50, 1);
+    cx.filter = 'blur(' + (blurAmount * 6) + 'px)';
+    cx.fillStyle = hexColor(r, g, b);
+    cx.beginPath();
+    cx.roundRect(180, 20, sqSize, sqSize, 8);
+    cx.fill();
+    cx.filter = 'none';
+    cx.fillStyle = '#ff2d78';
+    cx.font = '10px DM Mono';
+    cx.textAlign = 'center';
+    cx.fillText('TAC Exceeded: Smearing', 180 + sqSize/2, 20 + sqSize + 16);
+    cx.globalAlpha = blurAmount * 0.5;
+    for (let i = 0; i < 6; i++) {
+      cx.fillStyle = hexColor(r, g, b);
+      cx.beginPath();
+      cx.ellipse(180 + sqSize/2 + (Math.random()-0.5)*40, 20 + sqSize + 2, sqSize*0.4, 4 + i*2, 0, 0, Math.PI*2);
+      cx.fill();
+    }
+    cx.globalAlpha = 1;
+  } else {
+    cx.fillStyle = hexColor(r, g, b);
+    cx.beginPath();
+    cx.roundRect(180, 20, sqSize, sqSize, 8);
+    cx.fill();
+    cx.fillStyle = '#00ff88';
+    cx.font = '10px DM Mono';
+    cx.textAlign = 'center';
+    cx.fillText('Within limits: OK', 180 + sqSize/2, 20 + sqSize + 16);
+  }
+
+  const barX = 340;
+  const barY = 20;
+  const barW = 200;
+  const barH = sqSize;
+  cx.fillStyle = '#0e1018';
+  cx.beginPath();
+  cx.roundRect(barX, barY, barW, barH, 6);
+  cx.fill();
+  
+  const inks = [
+    {v:c, col:'#00e5ff', n:'C'},
+    {v:m, col:'#ff2d78', n:'M'},
+    {v:y, col:'#ffe500', n:'Y'},
+    {v:k, col:'#aab4cc', n:'K'}
+  ];
+  let stackY = barY;
+  for(let i=0; i<inks.length; i++) {
+    let ink = inks[i];
+    const h = (ink.v / 400) * barH;
+    cx.fillStyle = ink.col + 'bb';
+    cx.fillRect(barX, stackY, barW, h);
+    if (h > 12) {
+      cx.fillStyle = '#000a';
+      cx.font = 'bold 10px DM Mono';
+      cx.textAlign = 'center';
+      cx.fillText(ink.n + ':' + ink.v + '%', barX + barW/2, stackY + h/2 + 4);
+    }
+    stackY += h;
+  }
+  
+  const limitY = barY + (limit / 400) * barH;
+  cx.strokeStyle = over ? '#ff2d78' : '#ffe500';
+  cx.lineWidth = 1.5;
+  cx.setLineDash([4, 3]);
+  cx.beginPath();
+  cx.moveTo(barX - 10, limitY);
+  cx.lineTo(barX + barW + 10, limitY);
+  cx.stroke();
+  cx.setLineDash([]);
+  
+  cx.fillStyle = over ? '#ff2d78' : '#ffe500';
+  cx.font = '9px DM Mono';
+  cx.textAlign = 'left';
+  cx.fillText('Limit ' + limit + '%', barX + barW + 4, limitY + 3);
+  cx.fillStyle = '#8a96b8';
+  cx.font = '11px DM Mono';
+  cx.textAlign = 'left';
+  cx.fillText('TAC = C+M+Y+K = ' + c + '+' + m + '+' + y + '+' + k + ' = ' + tac + '%', 20, ch - 20);
+}
+
+// ══════════════════════════════════════════
+// LAB 4: GAMUT
+// ══════════════════════════════════════════
+const colorSpaces = {
+  srgb:   { name:'sRGB', col:'#4488ff', pts:[{x:.64,y:.33},{x:.30,y:.60},{x:.15,y:.06}], pct:35 },
+  argb:   { name:'Adobe RGB (1998)', col:'#00ff88', pts:[{x:.64,y:.33},{x:.21,y:.71},{x:.15,y:.06}], pct:50 },
+  pphoto: { name:'ProPhoto RGB', col:'#ff8800', pts:[{x:.7347,y:.2653},{x:.1596,y:.8404},{x:.0366,y:.0001}], pct:90 },
+  fogra39:{ name:'FOGRA39 CMYK', col:'#ff2d78', pts:[{x:.62,y:.34},{x:.195,y:.65},{x:.15,y:.07},{x:.34,y:.38}], pct:27 },
+  fogra47:{ name:'FOGRA47 Uncoated', col:'#ff6644', pts:[{x:.59,y:.34},{x:.20,y:.60},{x:.16,y:.08},{x:.33,y:.37}], pct:22 },
+  gracol: { name:'GRACoL Coated', col:'#ffcc00', pts:[{x:.63,y:.335},{x:.21,y:.68},{x:.15,y:.065}], pct:29 },
+};
+function drawGamut() {
+  const canvas = document.getElementById('gamutCanvas');
+  if (!canvas) return;
+  const {cx, cw: W, ch: H} = prepCanvas(canvas);
+  cx.clearRect(0, 0, W, H);
+  cx.fillStyle = '#13161d';
+  cx.fillRect(0, 0, W, H);
+
+  const pad = 40;
+  const pw = W - pad * 2;
+  const ph = H - pad * 2;
+  function xyToPx(x, y) {
+    return {
+      px: pad + x * pw * 0.85 + pw * 0.02,
+      py: pad + (1 - y) * ph * 0.85 + ph * 0.04
+    };
+  }
+
+  const locus = [{x:.1740,y:.0050},{x:.1552,y:.0167},{x:.1421,y:.0379},{x:.1288,y:.0637},{x:.1096,y:.1054},{x:.0913,y:.1390},{x:.0651,y:.2120},{x:.0469,y:.2950},{x:.0454,y:.3483},{x:.0580,y:.4220},{x:.0732,y:.4975},{x:.0948,y:.5763},{x:.1282,y:.6502},{x:.1723,y:.7321},{x:.2340,y:.7931},{x:.3162,y:.8120},{x:.3739,y:.7937},{x:.4430,y:.7504},{x:.5130,y:.6940},{x:.5951,y:.6202},{x:.6453,y:.5495},{x:.6937,y:.4677},{x:.7187,y:.3994},{x:.7300,y:.3449},{x:.7380,y:.3030},{x:.7300,y:.2679},{x:.6950,y:.2340},{x:.6360,y:.2110},{x:.5700,y:.2100},{x:.4900,y:.2340},{x:.4006,y:.2710},{x:.3600,y:.3200},{x:.2960,y:.3900},{x:.2340,y:.4680},{x:.1725,y:.5487}];
+  cx.beginPath();
+  for(let i=0; i<locus.length; i++) {
+    let p = locus[i];
+    const coords = xyToPx(p.x, p.y);
+    i === 0 ? cx.moveTo(coords.px, coords.py) : cx.lineTo(coords.px, coords.py);
+  }
+  cx.closePath();
+  const specGrd = cx.createLinearGradient(pad, pad, pad+pw, pad+ph);
+  specGrd.addColorStop(0,'rgba(123,0,255,0.2)');
+  specGrd.addColorStop(.3,'rgba(0,207,255,0.2)');
+  specGrd.addColorStop(.5,'rgba(0,255,68,0.2)');
+  specGrd.addColorStop(.7,'rgba(255,255,0,0.2)');
+  specGrd.addColorStop(1,'rgba(255,0,0,0.2)');
+  cx.fillStyle = specGrd;
+  cx.fill();
+  cx.strokeStyle = '#334';
+  cx.lineWidth = 1;
+  cx.stroke();
+
+  cx.strokeStyle = '#1e2235';
+  cx.lineWidth = 0.5;
+  const axes = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8];
+  for(let i=0; i<axes.length; i++) {
+    let v = axes[i];
+    const tx = xyToPx(v, 0);
+    const ty = xyToPx(0, v);
+    cx.beginPath(); cx.moveTo(tx.px, pad); cx.lineTo(tx.px, pad+ph); cx.stroke();
+    cx.beginPath(); cx.moveTo(pad, ty.py); cx.lineTo(pad+pw, ty.py); cx.stroke();
+    cx.fillStyle='#2a3050'; cx.font='9px DM Mono'; cx.textAlign='center'; cx.fillText(v.toFixed(1), tx.px, pad+ph+14); cx.textAlign='right'; cx.fillText(v.toFixed(1), pad-4, ty.py+3);
+  }
+  cx.fillStyle='#8a96b0'; cx.font='10px DM Mono'; cx.textAlign='center'; cx.fillText('x', pad+pw/2, pad+ph+26);
+  cx.save(); cx.translate(14, pad+ph/2); cx.rotate(-Math.PI/2); cx.textAlign='center'; cx.fillText('y', 0, 0); cx.restore();
+
+  // Draw D65 White Point
+  const d65 = xyToPx(0.3127, 0.3290);
+  cx.fillStyle = '#ffffff';
+  cx.beginPath(); cx.arc(d65.px, d65.py, 3, 0, Math.PI*2); cx.fill();
+  cx.strokeStyle = '#000'; cx.lineWidth=1; cx.stroke();
+  cx.fillStyle = '#8a96b0'; cx.font = '9px DM Mono'; cx.textAlign = 'left';
+  cx.fillText('D65', d65.px + 6, d65.py + 3);
+
+  const checks = document.querySelectorAll('#csCheckboxes input[type=checkbox]');
+  let html = '';
+  for(let c=0; c<checks.length; c++) {
+    let cb = checks[c];
+    if (!cb.checked) continue;
+    const key = cb.getAttribute('data-cs');
+    const cs = colorSpaces[key];
+    if (!cs) continue;
+    cx.beginPath();
+    for(let i=0; i<cs.pts.length; i++) {
+      let p = cs.pts[i];
+      const coords = xyToPx(p.x, p.y);
+      i === 0 ? cx.moveTo(coords.px, coords.py) : cx.lineTo(coords.px, coords.py);
+    }
+    cx.closePath();
+    cx.fillStyle = cs.col + '22';
+    cx.fill();
+    cx.strokeStyle = cs.col;
+    cx.lineWidth = 2;
+    cx.stroke();
+    
+    for(let i=0; i<cs.pts.length; i++) {
+      let p = cs.pts[i];
+      const coords = xyToPx(p.x, p.y);
+      cx.fillStyle = cs.col;
+      cx.beginPath(); cx.arc(coords.px, coords.py, 4, 0, Math.PI*2); cx.fill();
+    }
+    let sumX=0, sumY=0;
+    for(let i=0; i<cs.pts.length; i++) {
+      sumX += cs.pts[i].x;
+      sumY += cs.pts[i].y;
+    }
+    const cx_mid = sumX / cs.pts.length;
+    const cy_mid = sumY / cs.pts.length;
+    const midC = xyToPx(cx_mid, cy_mid);
+    cx.fillStyle = cs.col;
+    cx.font='bold 10px DM Mono';
+    cx.textAlign='center';
+    cx.fillText(cs.name, midC.px, midC.py);
+    html += '<div style="color:' + cs.col + ';display:flex;justify-content:space-between;padding:2px 0"><span>' + cs.name + '</span><span>' + cs.pct + '% visible</span></div>';
+  }
+  document.getElementById('gamutPctList').innerHTML = html;
+}
+
+// ══════════════════════════════════════════
+// LAB 5: GCR
+// ══════════════════════════════════════════
+function setGCR(v) {
+  document.getElementById('gcr_level').value = v;
+  document.querySelectorAll('.chip').forEach(function(c) {
+    if (c.closest('#lab5')) c.classList.remove('active');
+  });
+  updateGCR();
+}
+function updateGCR() {
+  const r = +document.getElementById('gcr_R').value;
+  const g = +document.getElementById('gcr_G').value;
+  const b = +document.getElementById('gcr_B').value;
+  const gcrLevel = +document.getElementById('gcr_level').value / 100;
+  
+  document.getElementById('gv_R').textContent = r;
+  document.getElementById('gv_G').textContent = g;
+  document.getElementById('gv_B').textContent = b;
+  document.getElementById('gv_gcr').textContent = Math.round(gcrLevel*100) + '%';
+  document.getElementById('gcrInputSwatch').style.background = hexColor(r,g,b);
+
+  const c0 = (1 - r/255)*100;
+  const m0 = (1 - g/255)*100;
+  const y0 = (1 - b/255)*100;
+  const grayComp = Math.min(c0, Math.min(m0, y0));
+  const kGCR = grayComp * gcrLevel;
+  const cGCR = c0 - kGCR;
+  const mGCR = m0 - kGCR;
+  const yGCR = y0 - kGCR;
+
+  const drawBars = function(c_val, m_val, y_val, k_val, label) {
+    let out = '<div style="margin-bottom:12px"><div style="font-family:\'DM Mono\',monospace;font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:#5a6380;margin-bottom:6px">' + label + '</div>';
+    const arr = [
+      {n:'C', v:c_val, col:'#00e5ff'},
+      {n:'M', v:m_val, col:'#ff2d78'},
+      {n:'Y', v:y_val, col:'#ffe500'},
+      {n:'K', v:k_val, col:'#aab4cc'}
+    ];
+    for(let i=0; i<arr.length; i++){
+      let item = arr[i];
+      out += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px"><span style="font-family:\'DM Mono\',monospace;font-size:10px;color:' + item.col + ';width:12px">' + item.n + '</span>' +
+             '<div style="flex:1;height:10px;background:#13161d;border-radius:3px;overflow:hidden"><div style="width:' + item.v + '%;height:100%;background:' + item.col + ';border-radius:3px;transition:width .3s"></div></div>' +
+             '<span style="font-family:\'DM Mono\',monospace;font-size:10px;color:#5a6380;width:32px;text-align:right">' + item.v.toFixed(0) + '%</span></div>';
+    }
+    out += '<div style="font-family:\'DM Mono\',monospace;font-size:9px;color:#3a4060;margin-top:2px">TAC: ' + (c_val+m_val+y_val+k_val).toFixed(0) + '%</div></div>';
+    return out;
+  };
+  
+  document.getElementById('gcrBars').innerHTML = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">' + drawBars(c0,m0,y0,0,'No GCR (CMY only)') + drawBars(cGCR,mGCR,yGCR,kGCR,'GCR ' + Math.round(gcrLevel*100) + '%') + '</div>';
+
+  const canvas = document.getElementById('gcrCanvas');
+  if(!canvas) return;
+  const {cx, cw, ch} = prepCanvas(canvas);
+  cx.clearRect(0, 0, cw, ch);
+  cx.fillStyle = '#13161d';
+  cx.fillRect(0, 0, cw, ch);
+
+  const swW = (cw - 40) / 5;
+  const swH = 70;
+  const swY = 30;
+  
+  const gcrVals = [0, 0.25, 0.5, 0.75, 1.0];
+  for(let i=0; i<gcrVals.length; i++) {
+    let gcr = gcrVals[i];
+    const kv = grayComp * gcr;
+    const cv2 = c0 - kv;
+    const mv2 = m0 - kv;
+    const yv2 = y0 - kv;
+    const rgbArr = cmykToRgb(cv2, mv2, yv2, kv);
+    const rr = rgbArr[0];
+    const rg = rgbArr[1];
+    const rb = rgbArr[2];
+    const x = 20 + i * swW;
+    
+    cx.fillStyle = hexColor(rr,rg,rb);
+    cx.beginPath();
+    cx.roundRect(x, swY, swW-8, swH, 6);
+    cx.fill();
+    
+    if (Math.abs(gcr - gcrLevel) < 0.13) {
+      cx.strokeStyle = '#fff4';
+      cx.lineWidth=2;
+      cx.beginPath();
+      cx.roundRect(x-1, swY-1, swW-6, swH+2, 6);
+      cx.stroke();
+    }
+    
+    cx.fillStyle = '#8a96b8';
+    cx.font='9px DM Mono';
+    cx.textAlign='center';
+    cx.fillText('GCR ' + Math.round(gcr*100)+'%', x + (swW-8)/2, swY + swH + 14);
+    cx.fillStyle = '#aab4cc';
+    cx.font='9px DM Mono';
+    cx.fillText('K=' + kv.toFixed(0)+'%', x + (swW-8)/2, swY + swH + 26);
+  }
+
+  cx.fillStyle = '#7a88a8';
+  cx.font='11px DM Mono';
+  cx.textAlign='left';
+  cx.fillText('RGB(' + r + ',' + g + ',' + b + ') -> CMY: C' + c0.toFixed(0) + ' M' + m0.toFixed(0) + ' Y' + y0.toFixed(0) + ' -> GCR ' + Math.round(gcrLevel*100) + '%: C' + cGCR.toFixed(0) + ' M' + mGCR.toFixed(0) + ' Y' + yGCR.toFixed(0) + ' K' + kGCR.toFixed(0), 20, ch - 14);
+}
+
+// ══════════════════════════════════════════
+// LAB 6: DOT GAIN / TVI
+// ══════════════════════════════════════════
+let dgPaper = 'coated';
+const dgProfiles = {
+  coated:   { name:'Coated stock', col:'#00e5ff', paperReflectance:0.92, solidReflectance:0.06, ynFactor:1.35, mechSpread:0.03, reference:'Lower TVI typical of coated substrates.' },
+  uncoated: { name:'Uncoated stock', col:'#ffe500', paperReflectance:0.86, solidReflectance:0.08, ynFactor:1.55, mechSpread:0.05, reference:'Moderate TVI due to stronger scatter and spread.' },
+  news:     { name:'Newsprint', col:'#ff6644', paperReflectance:0.78, solidReflectance:0.12, ynFactor:1.90, mechSpread:0.07, reference:'Highest TVI among the teaching profiles.' }
+};
+function setDGPaper(key, el) {
+  dgPaper = key;
+  document.querySelectorAll('#dgPaperChips .chip').forEach(function(c) { c.classList.remove('active'); });
+  el.classList.add('active');
+  updateDotGain();
+}
+function calcDotGainModel(fileVal, paper) {
+  const p = dgProfiles[paper];
+  const nominal = clamp(fileVal, 0, 100) / 100;
+  const mechanicalGain = p.mechSpread * 4 * nominal * (1 - nominal);
+  const effectiveArea = clamp(nominal + mechanicalGain, 0, 1);
+  const mixedRoot =
+    (1 - effectiveArea) * Math.pow(p.paperReflectance, 1 / p.ynFactor) +
+    effectiveArea * Math.pow(p.solidReflectance, 1 / p.ynFactor);
+  const reflectance = Math.pow(mixedRoot, p.ynFactor);
+  const paperDensity = -Math.log10(p.paperReflectance);
+  const solidDensity = -Math.log10(p.solidReflectance);
+  const tintDensity = -Math.log10(Math.max(reflectance, 1e-6));
+  const apparentArea = clamp(
+    (1 - Math.pow(10, -(tintDensity - paperDensity))) /
+    (1 - Math.pow(10, -(solidDensity - paperDensity))),
+    0,
+    1
+  );
+  const printed = apparentArea * 100;
+  const effectiveTone = effectiveArea * 100;
+  return {
+    printed: printed,
+    gain: printed - fileVal,
+    effectiveTone: effectiveTone,
+    mechanicalGain: (effectiveArea - nominal) * 100,
+    opticalGain: printed - effectiveTone,
+    ynFactor: p.ynFactor,
+    tintDensity: tintDensity
+  };
+}
+function calcDotGain(fileVal, paper) {
+  return calcDotGainModel(fileVal, paper).printed;
+}
+function updateDotGain() {
+  const tone = +document.getElementById('dgTone').value;
+  document.getElementById('dg_file').textContent = tone + '%';
+  const prof = dgProfiles[dgPaper];
+  const model = calcDotGainModel(tone, dgPaper);
+  const printed = model.printed;
+  const gain = model.gain;
+  
+  document.getElementById('dgReadout').innerHTML =
+    '<span class="tag">' + prof.name + '</span>' +
+    'File tone: <b>' + tone + '%</b> &rarr; Apparent printed tone: <b>' + printed.toFixed(1) + '%</b><br>' +
+    'TVI: <b style="color:' + prof.col + '">+' + gain.toFixed(1) + '%</b>' +
+    ' <span style="color:#7a88a8">(mechanical proxy +' + model.mechanicalGain.toFixed(1) + '%, optical +' + model.opticalGain.toFixed(1) + '%)</span><br>' +
+    'Yule-Nielsen n: <b>' + model.ynFactor.toFixed(2) + '</b> | Relative tint density: <b>' + model.tintDensity.toFixed(2) + '</b>';
+
+  const refPane = document.querySelector('#lab6 .workspace-sidebar > div > .pane:nth-of-type(2)');
+  if (refPane) {
+    refPane.innerHTML =
+      '<div class="pane-title"><span></span>Midtone Reference (40% patch)</div>' +
+      '<div id="dgRefValues" style="font-size:11px;font-family:\'DM Mono\',monospace;line-height:1.9;color:var(--dim)">' +
+        Object.keys(dgProfiles).map(function(key) {
+          const p = dgProfiles[key];
+          const ref = calcDotGainModel(40, key);
+          return '<div style="margin-bottom:12px"><b style="color:' + p.col + '">' + p.name + '</b><br>' +
+            '&nbsp;40% file &rarr; ' + ref.printed.toFixed(1) + '% printed (TVI +' + ref.gain.toFixed(1) + '%)<br>' +
+            '<span style="color:#7a88a8">' + p.reference + '</span></div>';
+        }).join('') +
+        '<div style="padding-top:10px;border-top:1px solid var(--border);color:#7a88a8;line-height:1.7">' +
+          'Teaching model only: the curve is substrate-dependent and is illustrated with a Murray-Davies / Yule-Nielsen-inspired reflectance model plus a small mechanical spread term. Use measured press curves for production control.' +
+        '</div>' +
+      '</div>';
+  }
+
+  const canvas = document.getElementById('dotGainCanvas');
+  if(!canvas) return;
+  const {cx, cw, ch} = prepCanvas(canvas);
+  cx.clearRect(0, 0, cw, ch);
+  cx.fillStyle = '#13161d';
+  cx.fillRect(0, 0, cw, ch);
+
+  const m = {l:60,r:30,t:30,b:50};
+  const pw = cw - m.l - m.r;
+  const ph = ch - m.t - m.b;
+
+  cx.strokeStyle = '#1e2235';
+  cx.lineWidth=0.7;
+  const values = [0,25,50,75,100];
+  for(let i=0; i<values.length; i++) {
+    let v = values[i];
+    const x_pos = m.l + v/100*pw;
+    const y_pos = m.t + (1-v/100)*ph;
+    cx.beginPath(); cx.moveTo(x_pos, m.t); cx.lineTo(x_pos, m.t+ph); cx.stroke();
+    cx.beginPath(); cx.moveTo(m.l, y_pos); cx.lineTo(m.l+pw, y_pos); cx.stroke();
+    cx.fillStyle='#7a88a8'; cx.font='9px DM Mono'; cx.textAlign='center';
+    cx.fillText(v+'%', x_pos, m.t+ph+14);
+    cx.textAlign='right'; cx.fillText(v+'%', m.l-4, y_pos+3);
+  }
+  cx.strokeStyle='#2e3455';
+  cx.lineWidth=1;
+  cx.setLineDash([4,4]);
+  cx.beginPath(); cx.moveTo(m.l,m.t+ph); cx.lineTo(m.l+pw,m.t); cx.stroke();
+  cx.setLineDash([]);
+  cx.fillStyle='#7a88a8'; cx.font='9px DM Mono'; cx.textAlign='left';
+  cx.fillText('Ideal (no gain)', m.l+pw/2+10, m.t+ph/2-6);
+
+  const entries = Object.keys(dgProfiles);
+  for(let i=0; i<entries.length; i++) {
+    const key = entries[i];
+    const p = dgProfiles[key];
+    if (key === dgPaper) continue;
+    cx.strokeStyle = p.col;
+    cx.globalAlpha = 0.3;
+    cx.lineWidth=1; 
+    cx.setLineDash([3,3]);
+    cx.beginPath();
+    for (let t=0; t<=100; t++) {
+      const pt = calcDotGain(t, key);
+      const x_pos = m.l + t/100*pw;
+      const y_pos = m.t + (1-pt/100)*ph;
+      t===0 ? cx.moveTo(x_pos,y_pos) : cx.lineTo(x_pos,y_pos);
+    }
+    cx.stroke(); 
+    cx.setLineDash([]);
+    cx.globalAlpha = 1;
+  }
+
+  cx.strokeStyle = prof.col;
+  cx.lineWidth=2.5;
+  cx.beginPath();
+  for (let t=0; t<=100; t++) {
+    const pt = calcDotGain(t, dgPaper);
+    const x_pos = m.l + t/100*pw;
+    const y_pos = m.t + (1-pt/100)*ph;
+    t===0 ? cx.moveTo(x_pos,y_pos) : cx.lineTo(x_pos,y_pos);
+  }
+  cx.stroke();
+  
+  cx.fillStyle = prof.col;
+  cx.globalAlpha = 0.15;
+  cx.beginPath();
+  for (let t=0; t<=100; t++) {
+    const pt = calcDotGain(t, dgPaper);
+    const x_pos = m.l + t/100*pw;
+    const y_pos = m.t + (1-pt/100)*ph;
+    t===0 ? cx.moveTo(x_pos,y_pos) : cx.lineTo(x_pos,y_pos);
+  }
+  for (let t=100; t>=0; t--) {
+    const x_pos = m.l + t/100*pw;
+    const y_pos = m.t + (1-t/100)*ph;
+    cx.lineTo(x_pos,y_pos);
+  }
+  cx.closePath();
+  cx.fill();
+  cx.globalAlpha = 1;
+
+  const mx_pos = m.l + tone/100*pw;
+  const my_pos = m.t + (1-printed/100)*ph;
+  cx.strokeStyle = 'rgba(255,255,255,0.2)';
+  cx.lineWidth=1;
+  cx.setLineDash([3,3]);
+  cx.beginPath(); cx.moveTo(mx_pos, m.t+ph); cx.lineTo(mx_pos, my_pos); cx.stroke();
+  cx.beginPath(); cx.moveTo(m.l, my_pos); cx.lineTo(mx_pos, my_pos); cx.stroke();
+  cx.setLineDash([]);
+  cx.fillStyle = '#fff';
+  cx.beginPath(); cx.arc(mx_pos, my_pos, 6, 0, Math.PI*2); cx.fill();
+  cx.fillStyle = prof.col;
+  cx.beginPath(); cx.arc(mx_pos, my_pos, 4, 0, Math.PI*2); cx.fill();
+
+  const d1x = m.l + pw + 50;
+  const d1y = m.t + 60;
+  if (d1x < cw - 10) {
+    cx.fillStyle='#1a2035'; cx.beginPath(); cx.arc(d1x, d1y, 24, 0, Math.PI*2); cx.fill();
+    cx.fillStyle='#aab4cc';
+    const rFile = Math.sqrt(tone/100)*22;
+    cx.beginPath(); cx.arc(d1x, d1y, rFile, 0, Math.PI*2); cx.fill();
+    cx.fillStyle='#7a88a8'; cx.font='9px DM Mono'; cx.textAlign='center';
+    cx.fillText('File', d1x, d1y+34); cx.fillText(tone+'%', d1x, d1y+44);
+
+    cx.fillStyle='#1a2035'; cx.beginPath(); cx.arc(d1x, d1y+90, 24, 0, Math.PI*2); cx.fill();
+    const rPrint = Math.sqrt(printed/100)*22;
+    cx.fillStyle = prof.col;
+    cx.globalAlpha = 0.8;
+    cx.beginPath(); cx.arc(d1x, d1y+90, rPrint, 0, Math.PI*2); cx.fill();
+    cx.globalAlpha = 1;
+    cx.fillStyle='#7a88a8'; cx.font='9px DM Mono'; cx.textAlign='center';
+    cx.fillText('Printed', d1x, d1y+124); cx.fillText(printed.toFixed(0)+'%', d1x, d1y+134);
+  }
+
+  cx.fillStyle='#8a96b0'; cx.font='10px DM Mono'; cx.textAlign='center';
+  cx.fillText('File Tone Value (%)', m.l+pw/2, m.t+ph+34);
+  cx.save(); cx.translate(16, m.t+ph/2); cx.rotate(-Math.PI/2);
+  cx.textAlign='center'; cx.fillText('Printed Tone Value (%)', 0, 0); cx.restore();
+
+  for(let i=0; i<entries.length; i++) {
+    const key = entries[i];
+    const p = dgProfiles[key];
+    cx.fillStyle = p.col;
+    cx.globalAlpha = key === dgPaper ? 1.0 : 0.25;
+    cx.fillRect(m.l, m.t+ph-30+i*14, 20, 3);
+    cx.font='9px DM Mono'; cx.textAlign='left'; 
+    cx.fillStyle = key === dgPaper ? p.col : '#7a88a8';
+    cx.globalAlpha = 1.0;
+    cx.fillText(p.name, m.l+26, m.t+ph-28+i*14);
+  }
+}
+
+// ══════════════════════════════════════════
+// LAB 7: RENDERING INTENTS & BPC
+// ══════════════════════════════════════════
+let currentRI = 'perceptual';
+function selectRI(ri, el) {
+  currentRI = ri;
+  document.querySelectorAll('.ri-opt').forEach(function(e) { e.classList.remove('active'); });
+  el.classList.add('active');
+  updateRI();
+}
+function setRI_color(r,g,b){
+  document.getElementById('ri_R').value=r;
+  document.getElementById('ri_G').value=g;
+  document.getElementById('ri_B').value=b;
+  updateRI();
+}
+function isInCMYKGamut(r,g,b){
+  const labArr = rgbToLab(r,g,b);
+  const L = labArr[0];
+  const a = labArr[1];
+  const bv = labArr[2];
+  const chroma = Math.sqrt(a*a+bv*bv);
+  if(L<3||L>97) return chroma<15;
+  const maxChroma=40*(Math.sin(L/100*Math.PI));
+  return chroma<=maxChroma;
+}
+function simulateRenderingIntent(r,g,b,intent){
+  const bpcEl = document.getElementById('ri_bpc');
+  const bpc = bpcEl ? bpcEl.checked : false;
+  const inGamut = isInCMYKGamut(r,g,b);
+  const labArr = rgbToLab(r,g,b);
+  const L = labArr[0];
+  const a = labArr[1];
+  const bv = labArr[2];
+  const chroma = Math.sqrt(a*a+bv*bv);
+  const hue = Math.atan2(bv,a);
+
+  switch(intent){
+    case 'perceptual': {
+      const maxC = 40*(Math.sin(Math.max(5,Math.min(95,L))/100*Math.PI));
+      const ratio = inGamut ? 1 : Math.min(1, maxC/chroma)*0.92;
+      const newChroma = chroma*ratio;
+      const newL = lerp(L,50,inGamut?0:0.08);
+      const na = newChroma*Math.cos(hue);
+      const nb = newChroma*Math.sin(hue);
+      return labToRgb(newL, na, nb);
+    }
+    case 'relative': {
+      let newL = L;
+      const destK = 15; 
+      if (bpc) { 
+        newL = L * ((100 - destK) / 100) + destK; 
+      } else { 
+        newL = Math.max(L, destK); 
+      }
+      const maxC = 40*(Math.sin(Math.max(5,Math.min(95,newL))/100*Math.PI));
+      const finalC = (inGamut && L === newL) ? chroma : Math.min(chroma, maxC);
+      const na = finalC*Math.cos(hue);
+      const nb = finalC*Math.sin(hue);
+      return labToRgb(newL, na, nb);
+    }
+    case 'absolute': {
+      if(inGamut) return [r,g,b];
+      const maxC = 38*(Math.sin(Math.max(5,Math.min(95,L))/100*Math.PI));
+      const na = maxC*Math.cos(hue);
+      const nb = maxC*Math.sin(hue);
+      const rgbArr = labToRgb(L,na,nb);
+      const rr = rgbArr[0];
+      const rg = rgbArr[1];
+      const rb = rgbArr[2];
+      return [Math.min(255,rr+8), Math.min(255,rg+6), Math.min(255,rb-4)];
+    }
+    case 'saturation': {
+      const boostC = Math.min(chroma*1.15, 55);
+      const na = boostC*Math.cos(hue);
+      const nb = boostC*Math.sin(hue);
+      return labToRgb(L,na,nb);
+    }
+    default: return [r,g,b];
+  }
+}
+function labToRgb(L,a,b){
+  const fy=(L+16)/116;
+  const fx=a/500+fy;
+  const fz=fy-b/200;
+  const x=0.95047*(Math.pow(fx,3)>0.008856?Math.pow(fx,3):(fx-16/116)/7.787);
+  const y=1.00000*(Math.pow(fy,3)>0.008856?Math.pow(fy,3):(fy-16/116)/7.787);
+  const z=1.08883*(Math.pow(fz,3)>0.008856?Math.pow(fz,3):(fz-16/116)/7.787);
+  let r= x*3.2404542-y*1.5371385-z*0.4985314;
+  let g=-x*0.9692660+y*1.8760108+z*0.0415560;
+  let bv= x*0.0556434-y*0.2040259+z*1.0572252;
+  r=r>0.0031308?1.055*Math.pow(r,1/2.4)-0.055:12.92*r;
+  g=g>0.0031308?1.055*Math.pow(g,1/2.4)-0.055:12.92*g;
+  bv=bv>0.0031308?1.055*Math.pow(bv,1/2.4)-0.055:12.92*bv;
+  return [clamp(Math.round(r*255),0,255),clamp(Math.round(g*255),0,255),clamp(Math.round(bv*255),0,255)];
+}
+function updateRI(){
+  const r=+document.getElementById('ri_R').value;
+  const g=+document.getElementById('ri_G').value;
+  const b=+document.getElementById('ri_B').value;
+  document.getElementById('rv_R').textContent=r;
+  document.getElementById('rv_G').textContent=g;
+  document.getElementById('rv_B').textContent=b;
+  document.getElementById('riInputSwatch').style.background=hexColor(r,g,b);
+
+  const outArr = simulateRenderingIntent(r,g,b,currentRI);
+  const rOut = outArr[0];
+  const gOut = outArr[1];
+  const bOut = outArr[2];
+  
+  const inGamut = isInCMYKGamut(r,g,b);
+  const de = deltaE(r,g,b,rOut,gOut,bOut);
+
+  const labIn = rgbToLab(r,g,b);
+  const cIn = Math.sqrt(labIn[1]*labIn[1] + labIn[2]*labIn[2]);
+  
+  const labOut = rgbToLab(rOut,gOut,bOut);
+  const cOut = Math.sqrt(labOut[1]*labOut[1] + labOut[2]*labOut[2]);
+
+  document.getElementById('riReadout').innerHTML=
+    '<span class="tag">Input (RGB)</span><b>rgb(' + r + ',' + g + ',' + b + ') &nbsp;&bull;&nbsp; Chroma: ' + cIn.toFixed(1) + '</b><br>' +
+    '<span class="tag">Simulated print preview (RGB display)</span><b>rgb(' + rOut + ',' + gOut + ',' + bOut + ') &nbsp;&bull;&nbsp; Chroma: ' + cOut.toFixed(1) + '</b><br>' +
+    '<span class="tag">In Gamut</span><b style="color:' + (inGamut?'#00ff88':'#ff2d78') + '">' + (inGamut?'Yes — no change':'No — out-of-gamut') + '</b> &middot; ' +
+    '<span class="tag">&Delta;E2000</span><b style="color:' + (de<1?'#00ff88':(de<5?'#ffe500':'#ff2d78')) + '">' + de.toFixed(1) + '</b>';
+
+  const canvas=document.getElementById('riCanvas');
+  if(!canvas) return;
+  const {cx, cw, ch} = prepCanvas(canvas);
+  cx.clearRect(0,0,cw,ch);
+  cx.fillStyle='#13161d';
+  cx.fillRect(0,0,cw,ch);
+
+  const sw=120, sy=24, gap=20;
+  cx.fillStyle=hexColor(r,g,b);
+  cx.beginPath(); cx.roundRect(20,sy,sw,sw,8); cx.fill();
+  cx.fillStyle='#8a96b8'; cx.font='10px DM Mono'; cx.textAlign='center';
+  cx.fillText('RGB Original',20+sw/2,sy+sw+16);
+  
+  if(!inGamut){
+    cx.strokeStyle='rgba(255,45,120,0.5)'; cx.lineWidth=2; cx.setLineDash([4,3]);
+    cx.beginPath(); cx.roundRect(20,sy,sw,sw,8); cx.stroke();
+    cx.setLineDash([]);
+    cx.fillStyle='#ff2d78'; cx.font='9px DM Mono'; cx.textAlign='center';
+    cx.fillText('\u26A0 Out-of-gamut',20+sw/2,sy+sw+28);
+  }
+
+  cx.fillStyle='#7a88a8'; cx.font='22px DM Sans'; cx.textAlign='center';
+  cx.fillText('\u2192',160+gap,sy+sw/2+8);
+  cx.fillStyle='#8a96b0'; cx.font='9px DM Mono'; cx.textAlign='center';
+  
+  let intentDisplay = 'perceptual';
+  if(currentRI === 'relative') intentDisplay = 'relative';
+  if(currentRI === 'absolute') intentDisplay = 'absolute';
+  if(currentRI === 'saturation') intentDisplay = 'saturation';
+  cx.fillText(intentDisplay, 160+gap, sy+sw/2+24);
+
+  cx.fillStyle=hexColor(rOut,gOut,bOut);
+  cx.beginPath(); cx.roundRect(220,sy,sw,sw,8); cx.fill();
+  cx.fillStyle='#8a96b8'; cx.font='10px DM Mono'; cx.textAlign='center';
+  cx.fillText('CMYK Simulation',220+sw/2,sy+sw+16);
+
+  const intents=['perceptual','relative','absolute','saturation'];
+  const intentNames=['Perceptual','Relative Col.','Absolute Col.','Saturation'];
+  const rowY = sy+sw+50;
+  const boxW = (cw-40)/4;
+  const boxH = 70;
+  
+  for(let i=0; i<intents.length; i++) {
+    const intent = intents[i];
+    const rIntArr = simulateRenderingIntent(r,g,b,intent);
+    const ri = rIntArr[0];
+    const gi = rIntArr[1];
+    const bi = rIntArr[2];
+    const x = 20 + i*boxW;
+    
+    cx.fillStyle=hexColor(ri,gi,bi);
+    cx.beginPath(); cx.roundRect(x,rowY,boxW-8,boxH,6); cx.fill();
+    
+    if(intent===currentRI){
+      cx.strokeStyle='rgba(255,255,255,0.3)'; cx.lineWidth=2;
+      cx.beginPath(); cx.roundRect(x-1,rowY-1,boxW-6,boxH+2,6); cx.stroke();
+    }
+    
+    cx.fillStyle='#8a96b0'; cx.font='9px DM Mono'; cx.textAlign='center';
+    cx.fillText(intentNames[i], x+(boxW-8)/2, rowY+boxH+14);
+    
+    const de2 = deltaE(r,g,b,ri,gi,bi);
+    cx.fillStyle = de2<1 ? '#00ff88' : (de2<5 ? '#ffe500' : '#ff2d78');
+    cx.fillText('\u0394E='+de2.toFixed(1), x+(boxW-8)/2, rowY+boxH+26);
+  }
+  
+  cx.fillStyle='#7a88a8'; cx.font='10px DM Mono'; cx.textAlign='left';
+  cx.fillText('Comparison of 4 Rendering Intents for the same color:',20,rowY-10);
+}
+
+// ══════════════════════════════════════════
+// LAB 8: SOFT PROOFING
+// ══════════════════════════════════════════
+const spGamuts={
+  fogra39:{name:'ISO Coated v2',maxC:0.85,maxL:96,minL:4,satFactor:0.75,warm:0},
+  fogra47:{name:'FOGRA47 Uncoated',maxC:0.70,maxL:92,minL:6,satFactor:0.65,warm:5},
+  fogra51:{name:'Coated FOGRA51',maxC:0.88,maxL:97,minL:3,satFactor:0.78,warm:-2},
+  news:{name:'Newsprint-like educational proxy',maxC:0.55,maxL:88,minL:10,satFactor:0.50,warm:12},
+  gracol:{name:'GRACoL 2006',maxC:0.90,maxL:97,minL:3,satFactor:0.80,warm:-1},
+};
+function simulatePress(r,g,b,profileKey){
+  const p = spGamuts[profileKey];
+  const labArr = rgbToLab(r,g,b);
+  const L = labArr[0];
+  const a = labArr[1];
+  const bv = labArr[2];
+  const chroma = Math.sqrt(a*a+bv*bv);
+  const hue = Math.atan2(bv,a);
+  
+  let tempL = L;
+  if (L < 10 || L > 90) {
+      tempL = lerp(L, 50, 0.15);
+  } else {
+      tempL = lerp(L, 50, 0.04);
+  }
+  const newL = clamp(tempL, p.minL, p.maxL);
+  
+  const maxChroma = p.maxC * (40 * Math.sin(clamp(newL,5,95)/100 * Math.PI));
+  const newChroma = Math.min(chroma * p.satFactor, maxChroma);
+  
+  const na = newChroma * Math.cos(hue);
+  const nb = newChroma * Math.sin(hue);
+  const rgbOut = labToRgb(newL, na + p.warm*0.5, nb - p.warm*0.3);
+  
+  return [clamp(rgbOut[0],0,255), clamp(rgbOut[1],0,255), clamp(rgbOut[2],0,255)];
+}
+
+function updateSoftProof(){
+  const r=+document.getElementById('sp_R').value;
+  const g=+document.getElementById('sp_G').value;
+  const b=+document.getElementById('sp_B').value;
+  
+  document.getElementById('spv_R').textContent = r;
+  document.getElementById('spv_G').textContent = g;
+  document.getElementById('spv_B').textContent = b;
+  document.getElementById('spColorPicker').value = hexColor(r,g,b);
+  
+  const profileKey = document.getElementById('spProfile').value;
+  const prof = spGamuts[profileKey];
+  
+  const outArr = simulatePress(r,g,b,profileKey);
+  const rOut = outArr[0];
+  const gOut = outArr[1];
+  const bOut = outArr[2];
+  const de = deltaE(r,g,b,rOut,gOut,bOut);
+  
+  const withinTeachingTolerance = de <= 3.0;
+
+  let deStatus = 'Significant';
+  let deColor = '#ff2d78';
+  
+  if(de < 1.0) { deStatus = 'Imperceptible'; deColor = '#00ff88'; }
+  else if(de < 3.0) { deStatus = 'Slight'; deColor = '#00ff88'; }
+  else if(de < 6.0) { deStatus = 'Perceptible'; deColor = '#ffe500'; }
+
+  let badgeBorder = withinTeachingTolerance ? 'rgba(0,255,136,0.3)' : 'rgba(255,45,120,0.3)';
+  let badgeBg = withinTeachingTolerance ? 'rgba(0,255,136,0.08)' : 'rgba(255,45,120,0.08)';
+  let badgeColor = withinTeachingTolerance ? 'var(--G)' : 'var(--M)';
+  let badgeIcon = withinTeachingTolerance ? '&#10003;' : '&#10007;';
+  let badgeText = withinTeachingTolerance ? 'within proxy threshold' : 'above proxy threshold';
+
+  document.getElementById('spDeltaE').innerHTML=
+    '<div style="font-size:32px;font-weight:500;color:' + deColor + '">&Delta;E2000 ' + de.toFixed(1) + '</div>' +
+    '<div style="font-size:10px;color:#5a6380;margin-top:2px;margin-bottom:10px">' + deStatus + ' color difference (human perception)</div>' +
+    '<div style="display:inline-flex; align-items:center; gap:6px; padding:6px 12px; border-radius:6px; border:1px solid ' + badgeBorder + '; background:' + badgeBg + '; color:' + badgeColor + '; font-family:\'DM Mono\',monospace; font-size:10px; text-transform:uppercase; letter-spacing:1px; margin-bottom: 12px;">' +
+      '<span style="font-size:12px">' + badgeIcon + '</span> Teaching proxy for ISO-style review (single patch, &Delta;E&le;3.0): ' + badgeText +
+    '</div>' +
+    '<div style="font-size:11px;color:var(--dim);line-height:1.6;padding-top:10px;border-top:1px solid var(--border)">' +
+      '<b>Educational note:</b> &Delta;E measures mathematical colour difference in CIE L*a*b* space. This badge is a single-patch teaching proxy that helps students reason about tolerance logic, but it is not a certified ISO 12647-7 contract proof decision.' +
+    '</div>';
+
+  document.getElementById('spReadout').innerHTML=
+    '<span class="tag">Screen (Adobe RGB approx.)</span><b>rgb(' + r + ',' + g + ',' + b + ') ' + hexColor(r,g,b).toUpperCase() + '</b><br>' +
+    '<span class="tag">Print Simulation &mdash; ' + prof.name + '</span><b>rgb(' + rOut + ',' + gOut + ',' + bOut + ') ' + hexColor(rOut,gOut,bOut).toUpperCase() + '</b><br>' +
+    '<span class="tag">Color Distance</span><b>&Delta;E = ' + de.toFixed(1) + '</b><br>' +
+    '<span class="tag">Caution</span><b>Single-patch educational simulation only; calibrated viewing and spectrophotometric verification are still required for real proof certification.</b>';
+
+  const canvas=document.getElementById('spCanvas');
+  if(!canvas) return;
+  const {cx, cw, ch} = prepCanvas(canvas);
+  cx.clearRect(0,0,cw,ch);
+  cx.fillStyle='#13161d';
+  cx.fillRect(0,0,cw,ch);
+
+  const hw = cw/2 - 2;
+  
+  cx.fillStyle=hexColor(r,g,b);
+  cx.beginPath(); cx.roundRect(0,0,hw,ch*0.55,8); cx.fill();
+  cx.fillStyle='rgba(0,0,0,0.5)'; cx.fillRect(0,ch*0.55-40,hw,40);
+  cx.fillStyle='#fff'; cx.font='bold 11px DM Mono'; cx.textAlign='center';
+  cx.fillText('SCREEN',hw/2,ch*0.55-24);
+  cx.fillStyle='rgba(255,255,255,0.6)'; cx.font='9px DM Mono';
+  cx.fillText(hexColor(r,g,b).toUpperCase(),hw/2,ch*0.55-10);
+
+  cx.fillStyle=hexColor(rOut,gOut,bOut);
+  cx.beginPath(); cx.roundRect(hw+4,0,hw,ch*0.55,8); cx.fill();
+  
+  if(profileKey==='news'){
+    cx.globalAlpha=0.12;
+    for(let i=0; i<ch*0.55; i+=3){
+      cx.fillStyle = i%6 ? '#fff' : '#000';
+      cx.fillRect(hw+4, i, hw, 1.5);
+    }
+    cx.globalAlpha=1;
+  }
+  
+  cx.fillStyle='rgba(0,0,0,0.5)'; cx.fillRect(hw+4,ch*0.55-40,hw,40);
+  cx.fillStyle='#fff'; cx.font='bold 11px DM Mono'; cx.textAlign='center';
+  cx.fillText('PRINT',hw+4+hw/2,ch*0.55-24);
+  cx.fillStyle='rgba(255,255,255,0.6)'; cx.font='9px DM Mono';
+  cx.fillText(prof.name,hw+4+hw/2,ch*0.55-10);
+
+  const profiles = Object.keys(spGamuts);
+  const bw = (cw-20)/profiles.length;
+  const bh = ch - (ch*0.55+20);
+  
+  for(let i=0; i<profiles.length; i++) {
+    const pk = profiles[i];
+    const riArr = simulatePress(r, g, b, pk);
+    const ri = riArr[0];
+    const gi = riArr[1];
+    const bi = riArr[2];
+    const bx = 10 + i*bw;
+    const by = ch*0.55 + 12;
+    
+    cx.fillStyle = hexColor(ri,gi,bi);
+    cx.beginPath(); cx.roundRect(bx, by, bw-6, bh-28, 5); cx.fill();
+    
+    if(pk === profileKey){
+      cx.strokeStyle = 'rgba(255,255,255,0.25)'; cx.lineWidth=2;
+      cx.beginPath(); cx.roundRect(bx-1, by-1, bw-4, bh-26, 5); cx.stroke();
+    }
+    
+    cx.fillStyle = '#8a96b0'; cx.font = '8px DM Mono'; cx.textAlign = 'center';
+    const shortName = spGamuts[pk].name.split(' ')[0];
+    cx.fillText(shortName, bx+(bw-6)/2, by+bh-20);
+    
+    const de2 = deltaE(r,g,b,ri,gi,bi);
+    cx.fillStyle = de2<3 ? '#00ff88' : (de2<6 ? '#ffe500' : '#ff2d78');
+    cx.fillText('\u0394E='+de2.toFixed(0), bx+(bw-6)/2, by+bh-9);
+  }
+}
+
+function updateSPfromSliders(){
+  updateSoftProof();
+}
+
+// Ensure the color picker works
+window.addEventListener('load', function() {
+  injectLearningCompanions();
+  document.getElementById('spColorPicker').addEventListener('input', function(){
+    const hex = this.value;
+    const r = parseInt(hex.slice(1,3), 16);
+    const g = parseInt(hex.slice(3,5), 16);
+    const b = parseInt(hex.slice(5,7), 16);
+    document.getElementById('sp_R').value = r;
+    document.getElementById('sp_G').value = g;
+    document.getElementById('sp_B').value = b;
+    updateSoftProof();
+  });
+});
+
+// ── INIT ──
+updateRGB();
+setTimeout(drawGamut, 100);
+
+// Keyboard Navigation
+window.addEventListener('keydown', function(e) {
+  if (e.key === 'ArrowRight') {
+    let next = currentLab + 1;
+    if (next > 8) return;
+    goLab(next, document.querySelectorAll('.nav-btn')[next]);
+  } else if (e.key === 'ArrowLeft') {
+    let prev = currentLab - 1;
+    if (prev < 0) return;
+    goLab(prev, document.querySelectorAll('.nav-btn')[prev]);
+  }
+});
+
+</script>
+</body>
+</html>
+

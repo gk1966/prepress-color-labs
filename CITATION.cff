@@ -1,0 +1,22 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it using the metadata below."
+type: software
+title: "Prepress Colour Management Interactive Labs v2.0: Interactive Simulation-Based Laboratories for Teaching Prepress Colour Management"
+authors:
+  - family-names: "Korakakis"
+    given-names: "Georgios"
+    orcid: "https://orcid.org/0009-0005-0042-6348"
+version: "v2.0"
+doi: "10.5281/zenodo.20368959"
+date-released: "2026-05-24"
+license: "MIT"
+url: "https://doi.org/10.5281/zenodo.20368959"
+keywords:
+  - "prepress colour management"
+  - "simulation-based learning"
+  - "technical education"
+  - "first-year higher education"
+  - "graphic arts education"
+  - "interactive visualisation"
+  - "colour management"
+  - "printing education"
